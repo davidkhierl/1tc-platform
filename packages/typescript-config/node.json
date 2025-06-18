@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "sourceMap": true,
+    "incremental": true,
+    "allowJs": true,
+    "checkJs": false,
+    "emitDeclarationOnly": false,
+    "types": ["node"]
+  }
+}
