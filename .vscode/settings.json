@@ -4,5 +4,12 @@
       "mode": "auto"
     }
   ],
-  "cSpell.words": ["dlvry", "serviceworker"]
+  "cSpell.words": [
+    "compressv",
+    "dlvry",
+    "oaicite",
+    "PASV",
+    "serviceworker",
+    "supabase"
+  ]
 }
