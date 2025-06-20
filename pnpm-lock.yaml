@@ -60,6 +60,9 @@ importers:
 
   apps/ftp:
     dependencies:
+      '@repo/supabase-ftp':
+        specifier: workspace:*
+        version: link:../../packages/supabase-ftp
       '@supabase/supabase-js':
         specifier: ^2.50.0
         version: 2.50.0
