@@ -8,7 +8,7 @@ import { Connection } from "./connection.js";
 export interface FtpServerOptions {
   url: string;
   passivePortRange: [number, number];
-  passiveHost: string | null;
+  passiveHostname: string | null;
   greeting?: string | string[];
   anonymous: boolean;
   listFormat: ((stat: Stats) => string) | Promise<string> | "ls" | "ep";
@@ -126,7 +126,7 @@ export class FtpServer extends EventEmitter {
   }
 
   listen(cb?: (host: FtpServerHost) => void) {
-    if (!this._options.passiveHost)
+    if (!this._options.passiveHostname)
       console.warn(
         "Passive host is not set. Passive connections not available."
       );
