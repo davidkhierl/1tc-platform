@@ -7,6 +7,14 @@
     "./server": {
       "types": "./src/server.ts",
       "default": "./dist/server.js"
+    },
+    "./helpers/*": {
+      "types": "./src/helpers/*.ts",
+      "default": "./dist/helpers/*.js"
+    },
+    "./errors": {
+      "types": "./src/errors.ts",
+      "default": "./dist/errors.js"
     }
   },
   "scripts": {
