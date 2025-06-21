@@ -1,0 +1,30 @@
+import os from "node:os";
+import { Netmask } from "@repo/utils/netmask";
+
+const nets = os.networkInterfaces();
+
+function getNetworks() {
+  let networks: Record<string, string> = {};
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]!) {
+      if (net.family === "IPv4" && !net.internal) {
+        networks[net.address + "/24"] = net.address;
+      }
+    }
+  }
+  return networks;
+}
+
+export const passiveHostname = (address: string) => {
+  // const networks = {
+  //     '$GATEWAY_IP/32': `${public_ip}`,
+  //     '10.0.0.0/8'    : `${lan_ip}`
+  // }
+  const networks = getNetworks();
+  for (const network in networks) {
+    if (new Netmask(network).contains(address)) {
+      return networks[network];
+    }
+  }
+  return "127.0.0.1";
+};
