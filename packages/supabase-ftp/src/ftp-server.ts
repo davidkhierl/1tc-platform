@@ -198,7 +198,6 @@ export class FtpServer extends EventEmitter {
     this.server.maxConnections = 0;
     this.emit("closing");
 
-    const connections = Array.from(this._connections.values());
     return Promise.all(
       Array.from(this._connections.entries()).map(([id]) =>
         this.disconnectClient(id)
