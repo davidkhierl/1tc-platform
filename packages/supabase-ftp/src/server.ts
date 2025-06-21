@@ -9,7 +9,7 @@ export function createFtpServer(
   return new FtpServer({
     url: "ftp://127.0.1:21",
     passivePortRange: [PASV_MIN, PASV_MAX],
-    passiveHost: null,
+    passiveHostname: null,
     anonymous: false,
     listFormat: "ls",
     blacklist: [],
