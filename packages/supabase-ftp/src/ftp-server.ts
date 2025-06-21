@@ -26,7 +26,7 @@ export interface FtpServerHost {
 }
 
 export class FtpServer extends EventEmitter {
-  private _options: FtpServerOptions;
+  options: FtpServerOptions;
   private _greeting: string[] = [];
   private _features: string = "";
   private _connections: Map<string, Connection> = new Map();
@@ -38,24 +38,24 @@ export class FtpServer extends EventEmitter {
   constructor(options: FtpServerOptions) {
     super();
 
-    this._options = options;
+    this.options = options;
 
-    this._greeting = this.setupGreeting(this._options.greeting);
+    this._greeting = this.setupGreeting(this.options.greeting);
     this._features = this.setupFeaturesMessage();
 
-    delete this._options.greeting;
+    delete this.options.greeting;
 
-    this._url = new URL(this._options.url);
+    this._url = new URL(this.options.url);
     this.getNextPassivePort = getNextPortFactory(
       this._url.hostname,
-      ...this._options.passivePortRange
+      ...this.options.passivePortRange
     );
 
-    const timeout = Number(this._options.timeout);
-    this._options.timeout = isNaN(timeout) ? 0 : timeout;
+    const timeout = Number(this.options.timeout);
+    this.options.timeout = isNaN(timeout) ? 0 : timeout;
 
     const serverConnectionHandler = async (socket: net.Socket) => {
-      if (this._options.timeout > 0) socket.setTimeout(this._options.timeout);
+      if (this.options.timeout > 0) socket.setTimeout(this.options.timeout);
 
       let connection = new Connection(this, socket);
       this._connections.set(connection.id, connection);
@@ -85,7 +85,7 @@ export class FtpServer extends EventEmitter {
     if (this.isTLS)
       this.server = tls.createServer(
         {
-          ...this._options.tls,
+          ...this.options.tls,
           pauseOnConnect: true,
         },
         serverConnectionHandler
@@ -114,7 +114,7 @@ export class FtpServer extends EventEmitter {
       };
     })();
 
-    if (this._options.endOnProcessSignal) {
+    if (this.options.endOnProcessSignal) {
       process.on("SIGINT", quit);
       process.on("SIGTERM", quit);
       process.on("SIGQUIT", quit);
@@ -122,11 +122,11 @@ export class FtpServer extends EventEmitter {
   }
 
   get isTLS() {
-    return this._url.protocol === "ftps:" && !!this._options.tls;
+    return this._url.protocol === "ftps:" && !!this.options.tls;
   }
 
   listen(cb?: (host: FtpServerHost) => void) {
-    if (!this._options.passiveHostname)
+    if (!this.options.passiveHostname)
       console.warn(
         "Passive host is not set. Passive connections not available."
       );
@@ -160,7 +160,7 @@ export class FtpServer extends EventEmitter {
 
   setupFeaturesMessage() {
     let features = [];
-    if (this._options.anonymous) features.push("a");
+    if (this.options.anonymous) features.push("a");
 
     if (features.length) {
       features.unshift("Features:");
@@ -178,7 +178,7 @@ export class FtpServer extends EventEmitter {
 
       setTimeout(() => {
         reject(new Error("Client disconnect timeout"));
-      }, this._options.timeout || 1e3);
+      }, this.options.timeout || 1e3);
 
       try {
         client.close();
