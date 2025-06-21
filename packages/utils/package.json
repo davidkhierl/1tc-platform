@@ -7,17 +7,25 @@
     "./ip": {
       "types": "./src/ip.ts",
       "default": "./dist/ip.js"
+    },
+    "./netmask": {
+      "types": "./src/netmask.ts",
+      "default": "./dist/netmask.js"
     }
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
     "@types/node": "^22.15.3",
-    "typescript": "5.8.3"
+    "@vitest/coverage-istanbul": "^3.2.4",
+    "typescript": "5.8.3",
+    "vitest": "^3.2.4"
   }
 }
