@@ -1,7 +1,7 @@
 import EventEmitter from "node:events";
 import net from "node:net";
 import crypto from "node:crypto";
-import { Connector } from "./base/base.js";
+import { Connector } from "./connector/base.js";
 import { FtpServer } from "./ftp-server.js";
 import { GeneralError, SocketError } from "./errors.js";
 import { Commands } from "./commands/commands.js";
@@ -35,6 +35,8 @@ export interface LetterObject {
   encoding: BufferEncoding;
   code: number;
 }
+
+export type ReplyLetters = string | Partial<LetterObject>;
 
 export class Connection extends EventEmitter {
   readonly id = "u" + crypto.randomBytes(8).toString("hex");
@@ -145,10 +147,7 @@ export class Connection extends EventEmitter {
     );
   }
 
-  async reply(
-    options: ReplyOptions,
-    ...letters: string[] | Partial<LetterObject>[]
-  ) {
+  async reply(options: ReplyOptions, ...letters: ReplyLetters[]) {
     const satisfyParameters = () => {
       if (typeof options === "number") options = { code: options };
       if (!Array.isArray(letters)) letters = [letters];
