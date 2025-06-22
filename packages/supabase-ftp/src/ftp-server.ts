@@ -1,11 +1,12 @@
-import EventEmitter from "node:events";
-import { Stats } from "node:fs";
-import { getNextPortFactory } from "./helpers/find-port.js";
 import tls from "node:tls";
 import net from "node:net";
+import { Stats } from "node:fs";
+import EventEmitter from "node:events";
+import { getNextPortFactory } from "./helpers/find-port.js";
 import { Connection } from "./connection.js";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { GenericSchema } from "@supabase/supabase-js/dist/module/lib/types.js";
+import FileSystem from "./fs/fs.js";
+import { SupabaseFtpError } from "./errors.js";
 
 export interface FtpServerOptions {
   url: string;
@@ -27,7 +28,51 @@ export interface FtpServerHost {
   port: number;
 }
 
-export class FtpServer extends EventEmitter {
+export interface FtpServerEvent {
+  login: [
+    { username: string; password: string; connection: Connection },
+    (value: {
+      root?: string;
+      cwd?: string;
+      fs?: FileSystem;
+      blacklist?: string[];
+      whitelist?: string[];
+    }) => void,
+    (reason?: Error | SupabaseFtpError) => void,
+  ];
+  connect: [{ id: string; connection: Connection; newConnectionCount: number }];
+  disconnect: [
+    { id: string; connection: Connection; newConnectionCount: number },
+  ];
+  "server-error": [{ error: Error }];
+  closing: [];
+  closed: [];
+}
+
+type EventDataParams<T extends readonly unknown[]> = T extends readonly [
+  ...infer Data,
+  (value: any) => void,
+  (reason?: any) => void,
+]
+  ? Data
+  : T extends readonly [...infer Data, (value: any) => void]
+    ? Data
+    : T;
+
+// Helper type to extract the resolved value type
+type EventResolveType<T extends readonly unknown[]> = T extends readonly [
+  ...any[],
+  (value: infer R) => void,
+  (reason?: any) => void,
+]
+  ? R
+  : T extends readonly [...any[], (value: infer R) => void]
+    ? R
+    : T extends readonly [infer First, ...any[]]
+      ? First
+      : void;
+
+export class FtpServer extends EventEmitter<FtpServerEvent> {
   options: FtpServerOptions;
   private _greeting: string[] = [];
   private _features: string = "";
@@ -150,10 +195,13 @@ export class FtpServer extends EventEmitter {
     });
   }
 
-  emitPromise(action: string, ...data: any[]) {
+  emitPromise<K extends keyof FtpServerEvent>(
+    action: K,
+    ...data: EventDataParams<FtpServerEvent[K]>
+  ): Promise<EventResolveType<FtpServerEvent[K]>> {
     return new Promise((resolve, reject) => {
       const params = [...data, resolve, reject];
-      this.emit.call(this, action, ...params);
+      (this.emit as any).call(this, action, ...params);
     });
   }
 
