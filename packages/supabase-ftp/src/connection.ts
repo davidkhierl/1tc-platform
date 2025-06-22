@@ -119,32 +119,26 @@ export class Connection extends EventEmitter {
   }
 
   async login(username: string, password: string) {
-    return (
-      Promise.resolve()
-        // TODO: Create return type for login
-        .then((): Promise<any> => {
-          const loginListener = this.server.listeners("login");
-          if (!loginListener || !loginListener.length) {
-            if (!this.server.options.anonymous)
-              throw new GeneralError(
-                'No "login" event listener registered',
-                500
-              );
-          }
+    return Promise.resolve()
+      .then(() => {
+        const loginListener = this.server.listeners("login");
+        if (!loginListener || !loginListener.length) {
+          if (!this.server.options.anonymous)
+            throw new GeneralError('No "login" event listener registered', 500);
+        }
 
-          return this.server.emitPromise("login", {
-            connection: this,
-            username,
-            password,
-          });
-        })
-        .then(({ root, cwd, fs, blacklist = [], whitelist = [] } = {}) => {
-          this.authenticated = true;
-          this.commands.blacklist = [...this.commands.blacklist, ...blacklist];
-          this.commands.whitelist = [...this.commands.whitelist, ...whitelist];
-          // this.fs = fs || new FileSystem(this, { root, cwd });
-        })
-    );
+        return this.server.emitPromise("login", {
+          connection: this,
+          username,
+          password,
+        });
+      })
+      .then(({ root, cwd, fs, blacklist = [], whitelist = [] }) => {
+        this.authenticated = true;
+        this.commands.blacklist = [...this.commands.blacklist, ...blacklist];
+        this.commands.whitelist = [...this.commands.whitelist, ...whitelist];
+        // this.fs = fs || new FileSystem(this, { root, cwd });
+      });
   }
 
   async reply(options: ReplyOptions, ...letters: ReplyLetters[]) {
