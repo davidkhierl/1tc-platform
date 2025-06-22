@@ -1,4 +1,18 @@
+import "node:net";
+import "node:tls";
 import { FtpServer, FtpServerOptions } from "./ftp-server.js";
+
+declare module "node:net" {
+  interface Socket {
+    connected?: boolean;
+  }
+}
+
+declare module "node:tls" {
+  interface TLSSocket {
+    connected?: boolean;
+  }
+}
 
 const PASV_MIN = 1024;
 const PASV_MAX = 65535;

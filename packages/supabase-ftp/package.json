@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./server": {
-      "types": "./src/server.ts",
-      "default": "./dist/server.js"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
     },
     "./helpers/*": {
       "types": "./src/helpers/*.ts",
