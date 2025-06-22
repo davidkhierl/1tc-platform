@@ -8,7 +8,7 @@ import { Connection } from "./connection.js";
 export interface FtpServerOptions {
   url: string;
   passivePortRange: [number, number];
-  passiveHostname: string | null;
+  passiveHostname: string | null | ((ip?: string | null) => string);
   greeting?: string | string[];
   anonymous: boolean;
   listFormat: ((stat: Stats) => string) | Promise<string> | "ls" | "ep";
@@ -30,7 +30,7 @@ export class FtpServer extends EventEmitter {
   private _greeting: string[] = [];
   private _features: string = "";
   private _connections: Map<string, Connection> = new Map();
-  private _url: URL;
+  readonly url: URL;
   readonly server: net.Server;
 
   readonly getNextPassivePort: () => Promise<number>;
@@ -45,9 +45,9 @@ export class FtpServer extends EventEmitter {
 
     delete this.options.greeting;
 
-    this._url = new URL(this.options.url);
+    this.url = new URL(this.options.url);
     this.getNextPassivePort = getNextPortFactory(
-      this._url.hostname,
+      this.url.hostname,
       ...this.options.passivePortRange
     );
 
@@ -122,7 +122,7 @@ export class FtpServer extends EventEmitter {
   }
 
   get isTLS() {
-    return this._url.protocol === "ftps:" && !!this.options.tls;
+    return this.url.protocol === "ftps:" && !!this.options.tls;
   }
 
   listen(cb?: (host: FtpServerHost) => void) {
@@ -133,12 +133,12 @@ export class FtpServer extends EventEmitter {
 
     return new Promise<FtpServerHost>((resolve, reject) => {
       this.server.once("error", reject);
-      this.server.listen(Number(this._url.port), this._url.hostname, () => {
+      this.server.listen(Number(this.url.port), this.url.hostname, () => {
         this.server.removeListener("error", reject);
         const host = {
-          protocol: this._url.protocol.replace(/\W/g, ""),
-          ip: this._url.hostname,
-          port: Number(this._url.port),
+          protocol: this.url.protocol.replace(/\W/g, ""),
+          ip: this.url.hostname,
+          port: Number(this.url.port),
         };
         resolve(host);
         if (cb) cb(host);
