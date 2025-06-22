@@ -1,4 +1,4 @@
-export class SupabaseFTPError extends Error {
+export class SupabaseFtpError extends Error {
   readonly code: number;
   constructor(message: string, code = 400) {
     super(message);
@@ -7,28 +7,28 @@ export class SupabaseFTPError extends Error {
   }
 }
 
-export class GeneralError extends SupabaseFTPError {
+export class GeneralError extends SupabaseFtpError {
   constructor(message: string, code = 400) {
     super(message, code);
     this.name = "GeneralError";
   }
 }
 
-export class ConnectorError extends SupabaseFTPError {
+export class ConnectorError extends SupabaseFtpError {
   constructor(message: string, code: number = 400) {
     super(message, code);
     this.name = "ConnectorError";
   }
 }
 
-export class SocketError extends SupabaseFTPError {
+export class SocketError extends SupabaseFtpError {
   constructor(message: string, code = 500) {
     super(message, code);
     this.name = "SocketError";
   }
 }
 
-export class FileSystemError extends SupabaseFTPError {
+export class FileSystemError extends SupabaseFtpError {
   constructor(message: string, code = 400) {
     super(message, code);
     this.name = "FileSystemError";
