@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node --env-file=.env dist/server.js",
     "build": "tsc",
-    "dev": "node --watch src/server.ts --watch-path ./src --experimental-strip-types",
+    "dev": "node --env-file=.env --watch src/server.ts --watch-path ./src --experimental-strip-types",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

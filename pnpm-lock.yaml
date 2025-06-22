@@ -124,6 +124,10 @@ importers:
         version: 5.8.3
 
   packages/eslint-config:
+    dependencies:
+      eslint-config-turbo:
+        specifier: ^2.5.4
+        version: 2.5.4(eslint@9.29.0)(turbo@2.5.4)
     devDependencies:
       '@eslint/js':
         specifier: ^9.29.0
@@ -164,9 +168,6 @@ importers:
 
   packages/supabase-ftp:
     dependencies:
-      '@supabase/supabase-js':
-        specifier: ^2.50.0
-        version: 2.50.0
       tus-js-client:
         specifier: ^4.3.1
         version: 4.3.1
@@ -180,6 +181,9 @@ importers:
       '@repo/utils':
         specifier: workspace:*
         version: link:../utils
+      '@supabase/supabase-js':
+        specifier: ^2.50.0
+        version: 2.50.0
       '@types/node':
         specifier: ^24.0.3
         version: 24.0.3
@@ -1624,6 +1628,12 @@ packages:
     hasBin: true
     peerDependencies:
       eslint: '>=7.0.0'
+
+  eslint-config-turbo@2.5.4:
+    resolution: {integrity: sha512-OpjpDLXIaus0N/Y+pMj17K430xjpd6WTo0xPUESqYZ9BkMngv2n0ZdjktgJTbJVnDmK7gHrXgJAljtdIMcYBIg==}
+    peerDependencies:
+      eslint: '>6.6.0'
+      turbo: '>2.0.0'
 
   eslint-plugin-es-x@7.8.0:
     resolution: {integrity: sha512-7Ds8+wAAoV3T+LAKeu39Y5BzXCrGKrcISfgKEqTS4BDN8SFEDQd0S43jiQ8vIa3wUKD07qitZdfzlenSi8/0qQ==}
@@ -5004,6 +5014,12 @@ snapshots:
   eslint-config-prettier@10.1.5(eslint@9.29.0):
     dependencies:
       eslint: 9.29.0
+
+  eslint-config-turbo@2.5.4(eslint@9.29.0)(turbo@2.5.4):
+    dependencies:
+      eslint: 9.29.0
+      eslint-plugin-turbo: 2.5.4(eslint@9.29.0)(turbo@2.5.4)
+      turbo: 2.5.4
 
   eslint-plugin-es-x@7.8.0(eslint@9.29.0):
     dependencies:
