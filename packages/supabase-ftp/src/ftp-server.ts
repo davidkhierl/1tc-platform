@@ -4,6 +4,8 @@ import { getNextPortFactory } from "./helpers/find-port.js";
 import tls from "node:tls";
 import net from "node:net";
 import { Connection } from "./connection.js";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { GenericSchema } from "@supabase/supabase-js/dist/module/lib/types.js";
 
 export interface FtpServerOptions {
   url: string;
@@ -32,13 +34,15 @@ export class FtpServer extends EventEmitter {
   private _connections: Map<string, Connection> = new Map();
   readonly url: URL;
   readonly server: net.Server;
+  readonly supabase: SupabaseClient;
 
   readonly getNextPassivePort: () => Promise<number>;
 
-  constructor(options: FtpServerOptions) {
+  constructor(supabase: SupabaseClient, options: FtpServerOptions) {
     super();
 
     this.options = options;
+    this.supabase = supabase;
 
     this._greeting = this.setupGreeting(this.options.greeting);
     this._features = this.setupFeaturesMessage();
