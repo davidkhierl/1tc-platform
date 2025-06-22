@@ -32,8 +32,8 @@ export interface FtpServerEvent {
   login: [
     { username: string; password: string; connection: Connection },
     (value: {
-      root?: string;
-      cwd?: string;
+      root: string;
+      cwd: string;
       fs?: FileSystem;
       blacklist?: string[];
       whitelist?: string[];
