@@ -1,11 +1,11 @@
-import { createFtpServer } from "@repo/supabase-ftp/server";
+import { createFtpServer } from "@repo/supabase-ftp";
 import { passiveHostname } from "@repo/supabase-ftp/helpers/passive-hostname";
 import { GeneralError } from "@repo/supabase-ftp/errors";
 
 const ftpServer = createFtpServer({
   url: "ftp://127.0.0.1:2121",
   anonymous: true,
-  passiveHostname: passiveHostname("127.0.0.1"),
+  passiveHostname: passiveHostname,
 });
 
 ftpServer.on("login", ({ connection, username, password }, resolve, reject) => {
