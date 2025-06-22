@@ -1,6 +1,6 @@
 import { CommandRegistry } from "../registry.js";
 
-const USER: CommandRegistry = {
+const user: CommandRegistry = {
   directive: "USER",
   handler: async function ({ command }) {
     if (this.username) return this.reply(530, "Username already set");
@@ -32,4 +32,4 @@ const USER: CommandRegistry = {
   },
 };
 
-export default USER;
+export default user;
