@@ -14,7 +14,7 @@ export interface FtpServerOptions {
   passiveHostname: string | null | ((ip?: string | null) => string);
   greeting?: string | string[];
   anonymous: boolean;
-  listFormat: ((stat: Stats) => string) | Promise<string> | "ls" | "ep";
+  listFormat: "ls" | "ep";
   blacklist: string[];
   whitelist: string[];
   tls?: tls.TlsOptions;
@@ -44,6 +44,7 @@ export interface FtpServerEvent {
   disconnect: [
     { id: string; connection: Connection; newConnectionCount: number },
   ];
+  "client-error": [{ connection: Connection; context: string; error: Error }];
   "server-error": [{ error: Error }];
   closing: [];
   closed: [];
