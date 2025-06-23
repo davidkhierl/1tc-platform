@@ -22,7 +22,7 @@ export class PassiveConnector extends Connector {
         this.dataServer &&
         this.dataServer.listening &&
         this.dataSocket &&
-        this.connected
+        this.dataSocket.connected
       ) {
         return Promise.resolve(this.dataSocket);
       }
