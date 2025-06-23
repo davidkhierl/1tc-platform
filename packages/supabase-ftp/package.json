@@ -26,6 +26,7 @@
     "@supabase/supabase-js": "^2.50.0"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
