@@ -13,9 +13,9 @@ export default class SupabaseFileSystem extends FileSystem {
     super(connection, options);
 
     const normalizedRoot = this.normalizePath(options.root || "");
-    const segments = normalizedRoot.split("/");
-    this.bucketName = this._root;
-    this.bucketPrefix = segments.slice(1).join("/");
+    const segments = normalizedRoot.split("/").filter(Boolean);
+    this.bucketName = this._root; // This is already just the bucket name from resolveRootPath
+    this.bucketPrefix = segments.slice(1).join("/"); // Everything after the bucket name
   }
   protected normalizePath(path: string): string {
     return path
@@ -57,9 +57,16 @@ export default class SupabaseFileSystem extends FileSystem {
     const normalizedDir = this.normalizePath(dir);
 
     if (normalizedDir === "." || normalizedDir === "") {
+      const fsPath =
+        this.cwd === "/"
+          ? this.bucketPrefix
+          : this.normalizePath(this.cwd.replace(/^\/+/, ""));
       return {
         clientPath: this.cwd,
-        fsPath: this.normalizePath(this.cwd.replace(/^\/+/, "")),
+        fsPath:
+          this.bucketPrefix && fsPath && fsPath !== this.bucketPrefix
+            ? `${this.bucketPrefix}/${fsPath}`
+            : this.bucketPrefix || fsPath,
       };
     }
 
@@ -99,7 +106,13 @@ export default class SupabaseFileSystem extends FileSystem {
       const { clientPath, fsPath } = this._resolvePath(path);
 
       // For root directory, always allow
-      if (clientPath === "/" || fsPath === "") {
+      if (clientPath === "/") {
+        this.cwd = "/";
+        return this.cwd;
+      }
+
+      // If fsPath is empty or equals bucketPrefix, we're at the virtual root
+      if (!fsPath || fsPath === this.bucketPrefix) {
         this.cwd = "/";
         return this.cwd;
       }
