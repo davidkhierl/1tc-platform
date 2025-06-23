@@ -7,6 +7,12 @@ import feat from "./registration/feat.js";
 import pwd from "./registration/pwd.js";
 import tType from "./registration/type.js";
 import pasv from "./registration/pasv.js";
+import list from "./registration/list.js";
+import nlst from "./registration/nlst.js";
+import cwd from "./registration/cwd.js";
+import rest from "./registration/rest.js";
+import opts from "./registration/opts.js";
+import retr from "./registration/retr.js";
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -14,7 +20,7 @@ export interface CommandFlags {
   obsolete?: boolean;
 }
 
-export interface CommandRegistry {
+export interface CommandRegistry<T = any> {
   directive: string | string[];
   arg?: string | null;
   flags?: CommandFlags;
@@ -24,10 +30,24 @@ export interface CommandRegistry {
   handler?: (
     this: Connection,
     args: { command: ParsedCommand; previousCommand?: ParsedCommand }
-  ) => Promise<any>;
+  ) => Promise<T> | T;
 }
 
-const commands: CommandRegistry[] = [feat, help, pasv, pwd, syst, tType, user];
+const commands: CommandRegistry[] = [
+  cwd,
+  feat,
+  help,
+  list,
+  nlst,
+  opts,
+  pasv,
+  pwd,
+  rest,
+  retr,
+  syst,
+  tType,
+  user,
+];
 
 const registry = commands.reduce<Record<string, CommandRegistry>>(
   (result, cmd) => {
