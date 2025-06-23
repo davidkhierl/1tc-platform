@@ -6,6 +6,8 @@ import { FtpServer } from "./ftp-server.js";
 import { GeneralError, SocketError } from "./errors.js";
 import { Commands } from "./commands/commands.js";
 import DEFAULT_MESSAGES from "./messages.js";
+import FileSystem from "./fs/fs.js";
+import SupabaseFileSystem from "./fs/supabase-fs.js";
 
 async function mapSeries<T extends any[], R>(
   arr: T,
@@ -51,6 +53,7 @@ export class Connection extends EventEmitter {
   username: string | null = null;
   private _restByteCount = 0;
   private _secure = false;
+  fs: FileSystem | null = null;
 
   constructor(server: FtpServer, socket: net.Socket) {
     super();
@@ -137,7 +140,7 @@ export class Connection extends EventEmitter {
         this.authenticated = true;
         this.commands.blacklist = [...this.commands.blacklist, ...blacklist];
         this.commands.whitelist = [...this.commands.whitelist, ...whitelist];
-        // this.fs = fs || new FileSystem(this, { root, cwd });
+        this.fs = fs || new SupabaseFileSystem(this, { root, cwd });
       });
   }
 
@@ -205,7 +208,7 @@ export class Connection extends EventEmitter {
     };
 
     const processLetter = (letter: LetterObject) =>
-      new Promise((resolve, reject) => {
+      new Promise<string>((resolve, reject) => {
         if (letter.socket && letter.socket.writable) {
           console.debug("Writing reply to socket:", {
             port: (letter.socket.address() as net.AddressInfo).port,
@@ -221,7 +224,7 @@ export class Connection extends EventEmitter {
                 return reject(err);
               }
 
-              resolve(undefined);
+              resolve(letter.message);
             }
           );
         } else {
