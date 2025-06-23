@@ -34,3 +34,10 @@ export class FileSystemError extends SupabaseFtpError {
     this.name = "FileSystemError";
   }
 }
+
+export class TimeoutError extends SupabaseFtpError {
+  constructor(message: string, code = 425) {
+    super(message, code);
+    this.name = "TimeoutError";
+  }
+}
