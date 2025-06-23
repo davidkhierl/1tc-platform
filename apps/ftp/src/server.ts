@@ -16,7 +16,10 @@ const ftpServer = createFtpServer(supabase, {
 
 ftpServer.on("login", ({ connection, username, password }, resolve, reject) => {
   if (username === "anonymous") {
-    return resolve({ root: "/" });
+    return resolve({
+      root: "/media-uploads-public",
+      cwd: "/",
+    });
   }
   return reject(new GeneralError("Invalid username or password", 401));
 });
