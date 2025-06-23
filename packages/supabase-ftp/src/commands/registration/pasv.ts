@@ -4,7 +4,7 @@ import { CommandRegistry } from "../registry.js";
 
 const pasv: CommandRegistry = {
   directive: "PASV",
-  handler: function () {
+  handler: async function () {
     if (!this.server.options.passiveHostname) {
       return this.reply(502);
     }
