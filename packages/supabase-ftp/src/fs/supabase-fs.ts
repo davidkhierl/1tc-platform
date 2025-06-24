@@ -1,6 +1,7 @@
+import { PassThrough, Readable, Stream, Writable } from "node:stream";
+import tus from "tus-js-client";
 import { Connection } from "../connection.js";
 import FileSystem, { FileStats, StreamResult } from "./fs.js";
-import { Readable, Stream } from "node:stream";
 
 export default class SupabaseFileSystem extends FileSystem {
   private bucketName: string;
@@ -250,40 +251,60 @@ export default class SupabaseFileSystem extends FileSystem {
 
   private async _downloadFile(
     fsPath: string,
-    stream: Readable,
+    stream: Writable,
     start?: number
   ) {
     try {
-      const { data, error } = await this.connection.server.supabase.storage
-        .from(this.bucketName)
-        .download(fsPath);
+      const { data: signedUrlData, error: signedUrlError } =
+        await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .createSignedUrl(fsPath, 30); // 30 seconds validity
 
-      if (error) {
+      if (signedUrlError) {
         stream.emit(
           "error",
-          new Error(`Failed to download file: ${error.message}`)
+          new Error(`Failed to get signed URL: ${signedUrlError.message}`)
         );
         return;
       }
 
-      if (!data) {
-        stream.emit("error", new Error("No file data received"));
+      if (!signedUrlData?.signedUrl) {
+        stream.emit("error", new Error("No signed URL received"));
         return;
       }
 
-      const arrayBuffer = await data.arrayBuffer();
-      let buffer = Buffer.from(arrayBuffer);
-
+      const options: RequestInit = {};
       if (start && start > 0) {
-        if (start >= buffer.length) {
-          stream.emit("error", new Error("Start position beyond file size"));
-          return;
-        }
-        buffer = buffer.subarray(start);
+        options.headers = {
+          Range: `bytes=${start}-`,
+        };
       }
 
-      stream.push(buffer);
-      stream.push(null);
+      const response = await fetch(signedUrlData.signedUrl, options);
+
+      if (!response.ok && response.status !== 206) {
+        stream.emit(
+          "error",
+          new Error(
+            `Failed to download file: ${response.status} ${response.statusText}`
+          )
+        );
+        return;
+      }
+
+      if (!response.body) {
+        stream.emit("error", new Error("Response body is null"));
+        return;
+      }
+
+      const nodeStream = Readable.fromWeb(response.body);
+
+      nodeStream.pipe(stream);
+
+      nodeStream.on("error", (error) => {
+        console.error("Stream error:", error);
+        stream.emit("error", error);
+      });
     } catch (error) {
       console.error("Error downloading file:", error);
       stream.emit("error", error);
@@ -293,7 +314,7 @@ export default class SupabaseFileSystem extends FileSystem {
   read(fileName: string, options?: { start?: number }): StreamResult {
     const { clientPath, fsPath } = this._resolvePath(fileName);
 
-    const stream = new Readable({
+    const stream = new PassThrough({
       read() {},
     });
 
@@ -307,11 +328,44 @@ export default class SupabaseFileSystem extends FileSystem {
     };
   }
 
-  write(
+  async write(
     fileName: string,
     options?: { append?: boolean; start?: number }
-  ): StreamResult {
-    throw new Error("Method not implemented.");
+  ): Promise<StreamResult> {
+    const { clientPath, fsPath } = this._resolvePath(fileName);
+
+    const pass = new Stream.PassThrough();
+
+    const upload = new tus.Upload(pass, {
+      endpoint: `${process.env.SUPABASE_URL}/storage/v1/upload/resumable`,
+      uploadDataDuringCreation: true,
+      uploadLengthDeferred: true,
+      chunkSize: 6 * 1024 * 1024, // 6MB chunks
+      metadata: {
+        bucketName: this.bucketName,
+        objectName: fsPath,
+        contentType: "application/octet-stream",
+      },
+      headers: {
+        authorization: `Bearer ${process.env.SUPABASE_KEY}`,
+        "x-upsert": options?.append ? "true" : "false",
+      },
+      onError: (error) => {
+        console.error("Upload error:", error);
+        pass.emit("error", error);
+      },
+      onSuccess: () => {
+        console.log(`File ${fileName} uploaded successfully`);
+        pass.end();
+      },
+    });
+
+    upload.start();
+
+    return {
+      stream: pass,
+      clientPath,
+    };
   }
 
   delete(path: string): void {
