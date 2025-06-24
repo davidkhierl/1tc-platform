@@ -26,13 +26,13 @@
     "@supabase/supabase-js": "^2.50.0"
   },
   "dependencies": {
+    "@repo/utils": "workspace:*",
     "date-fns": "^4.1.0",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/utils": "workspace:*",
     "@supabase/supabase-js": "^2.50.0",
     "@types/node": "^24.0.3",
     "typescript": "5.8.3"
