@@ -330,7 +330,7 @@ export default class SupabaseFileSystem extends FileSystem {
 
   async write(
     fileName: string,
-    options?: { append?: boolean; start?: number }
+    options: { append?: boolean; start?: number } = { append: true }
   ): Promise<StreamResult> {
     const { clientPath, fsPath } = this._resolvePath(fileName);
 
@@ -338,19 +338,21 @@ export default class SupabaseFileSystem extends FileSystem {
 
     const upload = new tus.Upload(pass, {
       endpoint: `${process.env.SUPABASE_URL}/storage/v1/upload/resumable`,
-      uploadDataDuringCreation: true,
-      uploadLengthDeferred: true,
-      removeFingerprintOnSuccess: true,
-      chunkSize: 6 * 1024 * 1024, // 6MB chunks
-      metadata: {
-        bucketName: this.bucketName,
-        objectName: fsPath,
-        contentType: "application/octet-stream",
-      },
+      retryDelays: [0, 3000, 5000, 10000, 20000],
       headers: {
         authorization: `Bearer ${process.env.SUPABASE_KEY}`,
         "x-upsert": options?.append ? "true" : "false",
       },
+      uploadDataDuringCreation: true,
+      uploadLengthDeferred: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: this.bucketName,
+        objectName: fsPath,
+        contentType: "application/octet-stream",
+        cacheControl: "3600",
+      },
+      chunkSize: 6 * 1024 * 1024, // 6MB chunks
       onError: (error) => {
         console.error("Upload error:", error);
         pass.emit("error", error);
@@ -361,7 +363,14 @@ export default class SupabaseFileSystem extends FileSystem {
       },
     });
 
-    upload.start();
+    upload.findPreviousUploads().then(function (previousUploads) {
+      // Found previous uploads so we select the first one.
+      if (previousUploads[0]) {
+        upload.resumeFromPreviousUpload(previousUploads[0]);
+      }
+      // Start the upload
+      upload.start();
+    });
 
     return {
       stream: pass,
