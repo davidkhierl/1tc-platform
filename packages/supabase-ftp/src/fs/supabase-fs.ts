@@ -129,16 +129,15 @@ export default class SupabaseFileSystem extends FileSystem {
           limit: 1,
         });
 
-      if (error) {
+      if (error || !data.length || !data) {
         throw new Error(
-          `Directory does not exist or is not accessible: ${error.message}`
+          `Directory does not exist or is not accessible${error ? `: ${error.message}` : ""}`
         );
       }
 
       this.cwd = clientPath;
       return this.cwd;
     } catch (error) {
-      console.error("Error changing directory:", error);
       throw new Error(
         `Cannot change directory to ${path}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -244,7 +243,6 @@ export default class SupabaseFileSystem extends FileSystem {
 
       throw new Error(`File or directory not found: ${fileName}`);
     } catch (error) {
-      console.error("Error getting file info:", error);
       throw error;
     }
   }
