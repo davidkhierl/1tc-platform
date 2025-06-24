@@ -48,8 +48,11 @@ abstract class FileSystem {
   abstract write(
     fileName: string,
     options?: { append?: boolean; start?: number }
-  ): StreamResult;
-  abstract read(fileName: string, options?: { start?: number }): StreamResult;
+  ): Promisable<StreamResult>;
+  abstract read(
+    fileName: string,
+    options?: { start?: number }
+  ): Promisable<StreamResult>;
   abstract delete(path: string): Promisable<void>;
   abstract mkdir(path: string): Promisable<string>;
   abstract rename(from: string, to: string): Promisable<void>;
