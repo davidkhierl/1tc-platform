@@ -340,6 +340,7 @@ export default class SupabaseFileSystem extends FileSystem {
       endpoint: `${process.env.SUPABASE_URL}/storage/v1/upload/resumable`,
       uploadDataDuringCreation: true,
       uploadLengthDeferred: true,
+      removeFingerprintOnSuccess: true,
       chunkSize: 6 * 1024 * 1024, // 6MB chunks
       metadata: {
         bucketName: this.bucketName,
