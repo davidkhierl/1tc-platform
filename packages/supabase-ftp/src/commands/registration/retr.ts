@@ -19,9 +19,7 @@ const retr: CommandRegistry = {
       .then(() => {
         this.commandSocket.pause();
       })
-      .then(() => {
-        return fs.get(filePath);
-      })
+      .then(() => fs.get(filePath))
       .then((fileStat) => {
         if (fileStat.isDirectory()) {
           throw new Error("Cannot retrieve a directory");
@@ -61,7 +59,7 @@ const retr: CommandRegistry = {
 
         await this.reply(150, `Opening data connection for ${clientPath}`);
 
-        const eventsPromise = new Promise((resolve, reject) => {
+        const eventsPromise = new Promise<void>((resolve, reject) => {
           let totalBytes = 0;
 
           stream.on("data", (data) => {
