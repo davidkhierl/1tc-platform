@@ -13,6 +13,7 @@ import cwd from "./registration/cwd.js";
 import rest from "./registration/rest.js";
 import opts from "./registration/opts.js";
 import retr from "./registration/retr.js";
+import stor from "./registration/stor.js";
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -44,6 +45,7 @@ const commands: CommandRegistry[] = [
   pwd,
   rest,
   retr,
+  stor,
   syst,
   tType,
   user,
