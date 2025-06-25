@@ -14,6 +14,7 @@ import rest from "./registration/rest.js";
 import opts from "./registration/opts.js";
 import retr from "./registration/retr.js";
 import stor from "./registration/stor.js";
+import dele from "./registration/dele.js";
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -36,6 +37,7 @@ export interface CommandRegistry<T = any> {
 
 const commands: CommandRegistry[] = [
   cwd,
+  dele,
   feat,
   help,
   list,
