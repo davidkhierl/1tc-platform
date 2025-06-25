@@ -104,6 +104,11 @@ export default class SupabaseFileSystem extends FileSystem {
 
   async chdir(path = "."): Promise<string> {
     try {
+      if (path === "/") {
+        this.cwd = "/";
+        return this.cwd;
+      }
+
       const { clientPath, fsPath } = this._resolvePath(path);
 
       if (clientPath === "/") {
@@ -121,6 +126,7 @@ export default class SupabaseFileSystem extends FileSystem {
         throw new Error(`Invalid directory name: contains invalid characters`);
       }
 
+      // Verify the directory exists by listing it
       const { data, error } = await this.connection.server.supabase.storage
         .from(this.bucketName)
         .list(fsPath || undefined, {
@@ -346,7 +352,6 @@ export default class SupabaseFileSystem extends FileSystem {
         bucketName: this.bucketName,
         objectName: fsPath,
         contentType: "application/octet-stream",
-        cacheControl: "3600",
       },
       chunkSize: 6 * 1024 * 1024, // 6MB chunks
       onError: (error) => {
@@ -431,8 +436,33 @@ export default class SupabaseFileSystem extends FileSystem {
       return Promise.reject(error);
     }
   }
-  mkdir(path: string): string {
-    throw new Error("Method not implemented.");
+
+  async mkdir(path: string): Promise<string> {
+    try {
+      const { clientPath, fsPath } = this._resolvePath(path);
+
+      const placeholderPath = `${fsPath}/.emptyFolderPlaceholder`;
+
+      const emptyBuffer = new Uint8Array(0);
+
+      const { error } = await this.connection.server.supabase.storage
+        .from(this.bucketName)
+        .upload(placeholderPath, emptyBuffer, {
+          contentType: "application/octet-stream",
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Failed to create directory: ${error.message}`);
+      }
+
+      return clientPath;
+    } catch (error) {
+      console.error("Error creating directory:", error);
+      throw new Error(
+        `Failed to create directory: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
   }
   rename(from: string, to: string): void {
     throw new Error("Method not implemented.");
