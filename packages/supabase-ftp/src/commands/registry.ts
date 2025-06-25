@@ -15,6 +15,8 @@ import opts from "./registration/opts.js";
 import retr from "./registration/retr.js";
 import stor from "./registration/stor.js";
 import dele from "./registration/dele.js";
+import mkd from "./registration/mkd.js";
+import rmd from "./registration/rmd.js";
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -41,12 +43,14 @@ const commands: CommandRegistry[] = [
   feat,
   help,
   list,
+  mkd,
   nlst,
   opts,
   pasv,
   pwd,
   rest,
   retr,
+  rmd,
   stor,
   syst,
   tType,
