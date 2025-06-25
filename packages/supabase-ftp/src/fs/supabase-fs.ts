@@ -106,13 +106,11 @@ export default class SupabaseFileSystem extends FileSystem {
     try {
       const { clientPath, fsPath } = this._resolvePath(path);
 
-      // For root directory, always allow
       if (clientPath === "/") {
         this.cwd = "/";
         return this.cwd;
       }
 
-      // If fsPath is empty or equals bucketPrefix, we're at the virtual root
       if (!fsPath || fsPath === this.bucketPrefix) {
         this.cwd = "/";
         return this.cwd;
@@ -362,11 +360,9 @@ export default class SupabaseFileSystem extends FileSystem {
     });
 
     upload.findPreviousUploads().then(function (previousUploads) {
-      // Found previous uploads so we select the first one.
       if (previousUploads[0]) {
         upload.resumeFromPreviousUpload(previousUploads[0]);
       }
-      // Start the upload
       upload.start();
     });
 
@@ -376,8 +372,64 @@ export default class SupabaseFileSystem extends FileSystem {
     };
   }
 
-  delete(path: string): void {
-    throw new Error("Method not implemented.");
+  async delete(path: string): Promise<void> {
+    try {
+      const { fsPath } = this._resolvePath(path);
+
+      return this.get(path).then(async (stats) => {
+        if (stats.isFile()) {
+          const { error } = await this.connection.server.supabase.storage
+            .from(this.bucketName)
+            .remove([fsPath]);
+
+          if (error) {
+            throw new Error(`Failed to delete file: ${error.message}`);
+          }
+        } else if (stats.isDirectory()) {
+          const { data, error } = await this.connection.server.supabase.storage
+            .from(this.bucketName)
+            .list(fsPath, {
+              limit: 1000,
+              offset: 0,
+              sortBy: { column: "name", order: "asc" },
+            });
+
+          if (error) {
+            throw new Error(
+              `Failed to list directory contents: ${error.message}`
+            );
+          }
+
+          if (data && data.length > 0) {
+            const filesToDelete = data
+              .filter((item) => item.metadata)
+              .map((file) => `${fsPath}/${file.name}`);
+
+            if (filesToDelete.length > 0) {
+              const { error: deleteError } =
+                await this.connection.server.supabase.storage
+                  .from(this.bucketName)
+                  .remove(filesToDelete);
+
+              if (deleteError) {
+                throw new Error(
+                  `Failed to delete files in directory: ${deleteError.message}`
+                );
+              }
+            }
+
+            for (const item of data.filter((item) => !item.metadata)) {
+              await this.delete(`${path}/${item.name}`);
+            }
+          }
+        }
+
+        return Promise.resolve();
+      });
+    } catch (error) {
+      console.error("Error deleting:", error);
+      return Promise.reject(error);
+    }
   }
   mkdir(path: string): string {
     throw new Error("Method not implemented.");
