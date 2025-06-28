@@ -7,7 +7,7 @@ import { error } from "node:console";
 
 const CONNECT_TIMEOUT = 30e3;
 
-export class PassiveConnector extends Connector {
+export default class PassiveConnector extends Connector {
   constructor(connection: Connection) {
     super(connection);
     this.type = "passive";
@@ -17,27 +17,32 @@ export class PassiveConnector extends Connector {
     if (!this.dataServer)
       return Promise.reject(new ConnectorError("Passive server not setup"));
 
-    const checkSocket = async (): Promise<net.Socket> => {
-      if (
-        this.dataServer &&
-        this.dataServer.listening &&
-        this.dataSocket &&
-        this.dataSocket.connected
-      ) {
-        return Promise.resolve(this.dataSocket);
-      }
+    return new Promise<net.Socket>((resolve, reject) => {
+      let delayTimeoutId: NodeJS.Timeout | null = null;
 
-      return new Promise<void>((resolve) => setTimeout(resolve, delay)).then(
-        () => checkSocket()
-      );
-    };
+      const timeoutId = setTimeout(() => {
+        if (delayTimeoutId) clearTimeout(delayTimeoutId);
+        reject(new Error("FTP passive connection timeout"));
+      }, timeout);
 
-    return Promise.race([
-      checkSocket(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("TimeoutError")), timeout)
-      ),
-    ]);
+      const checkSocket = (): void => {
+        if (
+          this.dataServer &&
+          this.dataServer.listening &&
+          this.dataSocket &&
+          this.dataSocket.connected
+        ) {
+          clearTimeout(timeoutId);
+          if (delayTimeoutId) clearTimeout(delayTimeoutId);
+          resolve(this.dataSocket);
+          return;
+        }
+
+        delayTimeoutId = setTimeout(() => checkSocket(), delay);
+      };
+
+      checkSocket();
+    });
   }
 
   async setupServer() {
