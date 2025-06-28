@@ -229,17 +229,19 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
 
       this._connections.delete(id);
 
-      setTimeout(() => {
-        reject(new Error("Client disconnect timeout"));
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Client disconnect timeout for ${id}`));
       }, this.options.timeout || 1e3);
 
       try {
         client.close();
+        clearTimeout(timeoutId);
+        resolve(true);
       } catch (error) {
+        clearTimeout(timeoutId);
         console.error(`Error closing client: ${id}`, error);
+        resolve(false);
       }
-
-      resolve(true);
     });
   }
 
