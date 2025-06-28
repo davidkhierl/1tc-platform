@@ -43,7 +43,7 @@ export type ReplyLetters = string | Partial<LetterObject>;
 export class Connection extends EventEmitter {
   readonly id = "u" + crypto.randomBytes(8).toString("hex");
   readonly server: FtpServer;
-  readonly commandSocket: net.Socket;
+  commandSocket: net.Socket;
   connector = new Connector(this);
   commands = new Commands(this);
   transferType = "binary";

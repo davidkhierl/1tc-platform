@@ -17,6 +17,11 @@ import stor from "./registration/stor.js";
 import dele from "./registration/dele.js";
 import mkd from "./registration/mkd.js";
 import rmd from "./registration/rmd.js";
+import abor from "./registration/abor.js";
+import allo from "./registration/allo.js";
+import auth from "./registration/auth.js";
+import eprt from "./registration/eprt.js";
+import port from "./registration/port.js";
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -38,8 +43,12 @@ export interface CommandRegistry<T = any> {
 }
 
 const commands: CommandRegistry[] = [
+  abor,
+  allo,
+  auth,
   cwd,
   dele,
+  eprt,
   feat,
   help,
   list,
@@ -47,6 +56,7 @@ const commands: CommandRegistry[] = [
   nlst,
   opts,
   pasv,
+  port,
   pwd,
   rest,
   retr,
