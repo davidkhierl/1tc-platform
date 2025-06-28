@@ -1,4 +1,4 @@
-import { PassiveConnector } from "../../connector/passive.js";
+import PassiveConnector from "../../connector/passive.js";
 import { GeneralError } from "../../errors.js";
 import { CommandRegistry } from "../registry.js";
 
