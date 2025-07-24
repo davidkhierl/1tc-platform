@@ -23,5 +23,6 @@
     "XMKD",
     "XPWD",
     "XRMD"
-  ]
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
