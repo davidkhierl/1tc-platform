@@ -1,0 +1,47 @@
+{
+  "name": "{{#if (eq type "package")}}@1tc/{{ dashCase name }}{{else}}{{ dashCase name }}{{/if}}",
+  "version": "1.0.0",
+  "description": "{{ description }}",
+  "private": true,
+  "type": "module",
+  {{#if (eq type "package")}}
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  {{/if}}
+  "scripts": {
+    {{#if (eq type "app")}}
+    "start": "node --env-file=.env dist/index.js",
+    {{/if}}
+    "build": "tsc",
+    {{#if (eq type "app")}}
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    {{else}}
+    "dev": "tsc --watch",
+    {{/if}}
+    "check-types": "tsc --noEmit"{{#if hasTests}},
+    "test": "vitest run"{{/if}}
+  },
+  {{#if (eq type "app")}}
+  "dependencies": {
+    "@1tc/utils": "workspace:*"
+  },
+  {{/if}}
+  "devDependencies": {
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
+    {{#if hasTests}}
+    "@1tc/vitest-config": "workspace:*",
+    "@vitest/coverage-istanbul": "^3.2.4",
+    "vitest": "^3.2.4",
+    {{/if}}
+    "@types/node": "^24.1.0",
+    {{#if (eq type "app")}}
+    "tsx": "^4.19.2",
+    {{/if}}
+    "typescript": "5.8.3"
+  }
+}
