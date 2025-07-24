@@ -2,7 +2,7 @@ import net from "node:net";
 import tls from "node:tls";
 import { Connection } from "../connection.js";
 import { Connector } from "./base.js";
-import { isEqual } from "@repo/utils/ip";
+import { isEqual } from "@1tc/utils/ip";
 import { SocketError } from "../errors.js";
 import { Socket } from "node:net";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@repo/utils",
+  "name": "@1tc/utils",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -24,9 +24,9 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
-    "@repo/vitest-config": "workspace:*",
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
+    "@1tc/vitest-config": "workspace:*",
     "@types/node": "^24.1.0",
     "@vitest/coverage-istanbul": "^3.2.4",
     "typescript": "5.8.3",

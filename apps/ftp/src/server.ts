@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import { createFtpServer } from "@repo/supabase-ftp";
-import { passiveHostname } from "@repo/supabase-ftp/helpers/passive-hostname";
-import { GeneralError } from "@repo/supabase-ftp/errors";
+import { createFtpServer } from "@1tc/supabase-ftp";
+import { passiveHostname } from "@1tc/supabase-ftp/helpers/passive-hostname";
+import { GeneralError } from "@1tc/supabase-ftp/errors";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

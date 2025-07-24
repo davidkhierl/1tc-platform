@@ -1,5 +1,5 @@
 {
-  "extends": "@repo/typescript-config/nextjs.json",
+  "extends": "@1tc/typescript-config/nextjs.json",
   "compilerOptions": {
     "plugins": [
       {
@@ -9,7 +9,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@repo/ui/*": ["../../packages/ui/src/*"]
+      "@1tc/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [

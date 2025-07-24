@@ -1,5 +1,5 @@
 {
-  "name": "@repo/ui",
+  "name": "@1tc/ui",
   "version": "1.0.0",
   "private": true,
   "exports": {
@@ -27,8 +27,8 @@
     "zod": "^4.0.9"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.0.8",
     "@turbo/gen": "^2.5.5",
     "@types/node": "^24.1.0",

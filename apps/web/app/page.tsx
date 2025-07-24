@@ -1,4 +1,4 @@
-import { Button } from "@repo/ui/components/button";
+import { Button } from "@1tc/ui/components/button";
 
 export default function Page() {
   return (

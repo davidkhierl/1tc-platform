@@ -1,5 +1,5 @@
 import os from "node:os";
-import { Netmask } from "@repo/utils/netmask";
+import { Netmask } from "@1tc/utils/netmask";
 
 const nets = os.networkInterfaces();
 

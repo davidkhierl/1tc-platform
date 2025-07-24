@@ -10,14 +10,14 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/supabase-ftp": "workspace:*",
+    "@1tc/supabase-ftp": "workspace:*",
     "@supabase/supabase-js": "^2.52.1",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
-    "@repo/utils": "workspace:*",
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
+    "@1tc/utils": "workspace:*",
     "@types/node": "^24.1.0",
     "typescript": "5.8.3"
   }

@@ -1,5 +1,5 @@
 {
-  "name": "@repo/supabase-ftp",
+  "name": "@1tc/supabase-ftp",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -26,13 +26,13 @@
     "@supabase/supabase-js": "^2.50.0"
   },
   "dependencies": {
-    "@repo/utils": "workspace:*",
+    "@1tc/utils": "workspace:*",
     "date-fns": "^4.1.0",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
     "@supabase/supabase-js": "^2.52.1",
     "@types/node": "^24.1.0",
     "typescript": "5.8.3"

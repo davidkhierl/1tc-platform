@@ -1,6 +1,6 @@
 import { Readable, Writable } from "node:stream";
 import { Connection } from "../connection.js";
-import { Promisable } from "@repo/utils/types/promisable";
+import { Promisable } from "@1tc/utils/types/promisable";
 
 export interface FileStats {
   name: string;

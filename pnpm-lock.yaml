@@ -23,7 +23,7 @@ importers:
 
   apps/docs:
     dependencies:
-      '@repo/ui':
+      '@1tc/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:
@@ -42,10 +42,10 @@ importers:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/node':
@@ -66,7 +66,7 @@ importers:
 
   apps/ftp:
     dependencies:
-      '@repo/supabase-ftp':
+      '@1tc/supabase-ftp':
         specifier: workspace:*
         version: link:../../packages/supabase-ftp
       '@supabase/supabase-js':
@@ -76,13 +76,13 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
-      '@repo/utils':
+      '@1tc/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       '@types/node':
@@ -94,7 +94,7 @@ importers:
 
   apps/studio:
     dependencies:
-      '@repo/ui':
+      '@1tc/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:
@@ -113,10 +113,10 @@ importers:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/node':
@@ -137,7 +137,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@repo/ui':
+      '@1tc/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:
@@ -156,10 +156,10 @@ importers:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/node':
@@ -223,7 +223,7 @@ importers:
 
   packages/supabase-ftp:
     dependencies:
-      '@repo/utils':
+      '@1tc/utils':
         specifier: workspace:*
         version: link:../utils
       date-fns:
@@ -233,10 +233,10 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@supabase/supabase-js':
@@ -284,10 +284,10 @@ importers:
         specifier: ^4.0.9
         version: 4.0.9
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@tailwindcss/postcss':
@@ -317,13 +317,13 @@ importers:
 
   packages/utils:
     devDependencies:
-      '@repo/eslint-config':
+      '@1tc/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
-      '@repo/vitest-config':
+      '@1tc/vitest-config':
         specifier: workspace:*
         version: link:../vitest-config
       '@types/node':
@@ -341,7 +341,7 @@ importers:
 
   packages/vitest-config:
     devDependencies:
-      '@repo/typescript-config':
+      '@1tc/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@vitest/coverage-istanbul':
