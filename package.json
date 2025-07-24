@@ -8,6 +8,7 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "@turbo/gen": "^2.5.5",
     "prettier": "^3.6.2",
     "supabase": "^2.31.8",
     "turbo": "^2.5.5",
