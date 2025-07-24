@@ -3,4 +3,6 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - core-js-pure
+  - sharp
   - supabase
