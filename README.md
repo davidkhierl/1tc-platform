@@ -1,84 +1,116 @@
-# Turborepo starter
+# 1TC Platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+The comprehensive digital platform for **1Take Collective**, built as a modern monorepo containing all apps, websites, landing pages, microservices, and servers.
 
-## Using this example
+## Getting Started
 
-Run the following command:
+Clone the repository and install dependencies:
 
 ```sh
-npx create-turbo@latest
+git clone <repository-url>
+cd 1tc-platform
+pnpm install
 ```
 
 ## What's inside?
 
-This Turborepo includes the following packages/apps:
+This platform includes the following packages/apps:
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@1tc/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@1tc/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@1tc/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- `docs`: Documentation [Next.js](https://nextjs.org/) app
+- `web`: Main website [Next.js](https://nextjs.org/) app  
+- `studio`: Studio application [Next.js](https://nextjs.org/) app
+- `ftp`: FTP server application
+- `@1tc/ui`: Shared React component library used across all applications
+- `@1tc/eslint-config`: ESLint configurations (includes `eslint-config-next` and `eslint-config-prettier`)
+- `@1tc/typescript-config`: TypeScript configurations used throughout the monorepo
+- `@1tc/utils`: Shared utility functions and helpers
+- `@1tc/supabase-ftp`: FTP server integration with Supabase
+- `@1tc/vitest-config`: Vitest testing configurations
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
-### Utilities
+### Tech Stack
 
-This Turborepo has some additional tools already setup for you:
+This platform is built with modern tools:
 
 - [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [Next.js](https://nextjs.org/) for React applications
+- [Turborepo](https://turborepo.com/) for monorepo management
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
+- [Vitest](https://vitest.dev/) for testing
+- [pnpm](https://pnpm.io/) for package management
 
-### Build
+## Development
 
-To build all apps and packages, run the following command:
+### Build All
 
-```
-cd my-turborepo
+To build all apps and packages:
+
+```bash
 pnpm build
 ```
 
-### Develop
+### Development Mode
 
-To develop all apps and packages, run the following command:
+To start all apps in development mode:
 
-```
-cd my-turborepo
+```bash
 pnpm dev
 ```
 
-### Remote Caching
+### Linting
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+To lint all packages:
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
+```bash
+pnpm lint
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### Testing
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+To run tests:
 
+```bash
+pnpm test
 ```
-npx turbo link
-```
+
+## Platform Architecture
+
+### Applications
+- **Web**: Main customer-facing website
+- **Studio**: Internal studio management application
+- **Docs**: Documentation and developer resources
+- **FTP**: File transfer and media management server
+
+### Shared Packages
+- **UI Library**: Consistent design system across all apps
+- **Utils**: Common utilities and helpers
+- **Configs**: Shared tooling configurations
+
+## Remote Caching
+
+This platform uses [Turborepo Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share build artifacts across machines and CI/CD pipelines.
+
+To enable remote caching:
+
+1. Create a [Vercel account](https://vercel.com/signup)
+2. Authenticate: `npx turbo login`
+3. Link your repo: `npx turbo link`
 
 ## Useful Links
 
-Learn more about the power of Turborepo:
+Learn more about the tools powering this platform:
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
+- [Turborepo Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
+- [Turborepo Caching](https://turborepo.com/docs/crafting-your-repository/caching)
 - [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
 - [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.com/docs/reference/configuration)
 - [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+
+---
+
+**1Take Collective** - *One take, infinite possibilities.*
