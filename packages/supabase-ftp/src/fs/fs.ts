@@ -57,7 +57,7 @@ abstract class FileSystem {
   abstract mkdir(path: string): Promisable<string>;
   abstract rename(from: string, to: string): Promisable<void>;
   abstract chmod(path: string, mode: number): Promisable<void>;
-  abstract getUniqueName(): Promisable<string>;
+  abstract getUniqueName(name: string): Promisable<string>;
 }
 
 export default FileSystem;
