@@ -1,3 +1,10 @@
-import { baseConfig } from "@1tc/vitest-config/base";
+import { defineConfig } from 'vitest/config';
+import { sharedConfig } from '@1tc/vitest-config';
 
-export default baseConfig;
+export default defineConfig({
+  ...sharedConfig,
+  test: {
+    ...sharedConfig.test,
+    // Utils-specific overrides if needed
+  },
+});
