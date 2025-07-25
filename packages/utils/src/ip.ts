@@ -1,6 +1,6 @@
-import { Buffer } from "node:buffer";
-import os from "node:os";
-import net from "node:net";
+import { Buffer } from 'node:buffer';
+import os from 'node:os';
+import net from 'node:net';
 
 /**
  * Returns true if the string looks like a number in octal format.
@@ -8,7 +8,7 @@ import net from "node:net";
  */
 const isOctal = (byte: string | number): boolean => {
   const str = String(byte);
-  return str.startsWith("0") && /^[0-7]+$/.test(str);
+  return str.length > 1 && str.startsWith('0') && /^[0-7]+$/.test(str);
 };
 
 /**
@@ -17,17 +17,17 @@ const isOctal = (byte: string | number): boolean => {
  */
 const parseOctets = (addr: string): number[] =>
   addr
-    .toLocaleLowerCase()
-    .split(".")
-    .map((octet) => {
+    .toLowerCase()
+    .split('.')
+    .map(octet => {
       // handle hexadecimal format
-      if (octet.startsWith("0x")) return parseInt(octet, 16);
+      if (octet.startsWith('0x')) return parseInt(octet, 16);
 
       // handle octal format
       if (isOctal(octet)) return parseInt(octet, 8);
 
-      // handle decimal format, reject invalid leading zeros
-      if (/^[1-9]\d*$/.test(octet)) return parseInt(octet, 10);
+      // handle decimal format, including single zero
+      if (/^(0|[1-9]\d*)$/.test(octet)) return parseInt(octet, 10);
 
       return NaN;
     });
@@ -37,12 +37,12 @@ const parseOctets = (addr: string): number[] =>
  * @param addr The IPv6 address to parse.
  */
 const parseWords = (addr: string): number[] =>
-  addr.split(":").flatMap((word) => {
-    if (word === "") {
+  addr.split(':').flatMap(word => {
+    if (word === '') {
       return [];
     }
 
-    if (word.includes(".")) {
+    if (word.includes('.')) {
       return parseOctets(word);
     }
 
@@ -61,7 +61,7 @@ const compressv6 = (words: string[]): string => {
   const longestZeroSequence: ZeroSequence = { start: null, length: 0 };
 
   words.forEach((word, index) => {
-    if (word === "0") {
+    if (word === '0') {
       currentZeroSequence.start ??= index;
       currentZeroSequence.length += 1;
       return;
@@ -77,21 +77,21 @@ const compressv6 = (words: string[]): string => {
     Object.assign(longestZeroSequence, currentZeroSequence);
 
   // If the longest sequence is the full address, return '::'
-  if (longestZeroSequence.length === 8) return "::";
+  if (longestZeroSequence.length === 8) return '::';
 
   // If the longest sequence is more than one zeros, then replace it with ''
   // Once joined with ':', the longest sequence will be '::'
   if (longestZeroSequence.length > 1 && longestZeroSequence.start !== null)
-    words.splice(longestZeroSequence.start, longestZeroSequence.length, "");
+    words.splice(longestZeroSequence.start, longestZeroSequence.length, '');
 
   // If we start or end with a : then we need to add an extra :
-  const compressed = words.join(":");
-  if (compressed.startsWith(":")) {
-    return ":" + compressed;
+  const compressed = words.join(':');
+  if (compressed.startsWith(':')) {
+    return ':' + compressed;
   }
 
-  if (compressed.endsWith(":")) {
-    return compressed + ":";
+  if (compressed.endsWith(':')) {
+    return compressed + ':';
   }
 
   return compressed;
@@ -104,17 +104,17 @@ const compressv6 = (words: string[]): string => {
  */
 const v4toUInt8Array = (addr: string | number) => {
   // Empty string is invalid
-  if (addr === "") {
-    throw new Error("invalid ip address");
+  if (addr === '') {
+    throw new Error('invalid ip address');
   }
 
   // Anything not a string or a number is invalid
-  if (typeof addr !== "string" && typeof addr !== "number") {
-    throw new Error("invalid ip address");
+  if (typeof addr !== 'string' && typeof addr !== 'number') {
+    throw new Error('invalid ip address');
   }
 
   // If there are no dots, or the type is a number, then assume it's a long
-  if (typeof addr === "number" || String(addr).includes(".") === false) {
+  if (typeof addr === 'number' || String(addr).includes('.') === false) {
     const int32 = isOctal(addr) ? parseInt(String(addr), 8) : Number(addr);
     return new Uint8Array([
       (int32 >> 24) & 0xff,
@@ -129,22 +129,22 @@ const v4toUInt8Array = (addr: string | number) => {
 
   // If there are more than 4 parts, this is not valid
   if (parts.length > FOUR_BYTES) {
-    throw new Error("invalid ip address");
+    throw new Error('invalid ip address');
   }
 
   // If any part has a NaN, this is not valid
   if (parts.some(Number.isNaN)) {
-    throw new Error("invalid ip address");
+    throw new Error('invalid ip address');
   }
 
   // If any part is < 0 or > 255, this is not valid
-  if (parts.some((part) => part < 0 || part > 255)) {
-    throw new Error("invalid ip address");
+  if (parts.some(part => part < 0 || part > 255)) {
+    throw new Error('invalid ip address');
   }
 
   // If any part is a float, this is not valid
-  if (parts.some((part) => part !== (part | 0))) {
-    throw new Error("invalid ip address");
+  if (parts.some(part => part !== (part | 0))) {
+    throw new Error('invalid ip address');
   }
 
   // If there are fewer than 4 parts, fill in the missing parts with 0
@@ -164,18 +164,18 @@ const v4toUInt8Array = (addr: string | number) => {
  */
 const v6toUInt8Array = (addr: string) => {
   // Empty string is invalid
-  if (addr === "") {
-    throw new Error("invalid ip address");
+  if (addr === '') {
+    throw new Error('invalid ip address');
   }
 
   // Anything not a string  is invalid
-  if (typeof addr !== "string") {
-    throw new Error("invalid ip address");
+  if (typeof addr !== 'string') {
+    throw new Error('invalid ip address');
   }
 
   // Anything not in a valid v6 format is invalid
   if (net.isIPv6(addr) === false) {
-    throw new Error("invalid ip address");
+    throw new Error('invalid ip address');
   }
 
   const SIXTEEN_BYTES = 16 as const;
@@ -183,18 +183,18 @@ const v6toUInt8Array = (addr: string) => {
   let words;
 
   // If there is no double colon, handle the parts directly
-  if (addr.includes("::") === false) {
+  if (addr.includes('::') === false) {
     words = parseWords(addr);
     if (words.length > SIXTEEN_BYTES) {
-      throw new Error("invalid ip address");
+      throw new Error('invalid ip address');
     }
   } else {
-    const [left, right] = addr.toLowerCase().split("::");
+    const [left, right] = addr.toLowerCase().split('::');
     const leftWords = parseWords(left!);
     const rightWords = parseWords(right!);
 
     if (leftWords.length + rightWords.length > SIXTEEN_BYTES) {
-      throw new Error("invalid ip address 3");
+      throw new Error('invalid ip address');
     }
 
     const padding = Array(SIXTEEN_BYTES).fill(0);
@@ -205,7 +205,7 @@ const v6toUInt8Array = (addr: string) => {
   }
 
   if (words.some(Number.isNaN)) {
-    throw new Error("invalid ip address");
+    throw new Error('invalid ip address');
   }
 
   return Uint8Array.from(words);
@@ -234,30 +234,30 @@ const isV4MappedV6 = (bytes: Uint8Array) => {
 
   // Sixth word should be 0xffff and everything before should be 0
   const sixthWord = getWordAtIndex(bytes, 5);
-  return sixthWord === 0xffff && bytes.slice(0, 10).every((byte) => byte === 0);
+  return sixthWord === 0xffff && bytes.slice(0, 10).every(byte => byte === 0);
 };
 
 type Family =
   | 4
   | 6
-  | "4"
-  | "6"
-  | "ipv4"
-  | "ipv6"
-  | "IPv4"
-  | "IPv6"
-  | "IPV4"
-  | "IPV6";
+  | '4'
+  | '6'
+  | 'ipv4'
+  | 'ipv6'
+  | 'IPv4'
+  | 'IPv6'
+  | 'IPV4'
+  | 'IPV6';
 
 /**
  * Normalize the ip family to either ipv4 or ipv6
  * @param family A representation of the IP family
  */
 const normalizeFamily = (family?: Family) => {
-  if (String(family) === "6" || String(family).toLowerCase() === "ipv6") {
-    return "ipv6";
+  if (String(family) === '6' || String(family).toLowerCase() === 'ipv6') {
+    return 'ipv6';
   }
-  return "ipv4";
+  return 'ipv4';
 };
 
 /**
@@ -293,7 +293,7 @@ export const isV6Format = (addr: string) => net.isIPv6(addr);
  * @throws {Error} If the address is invalid
  */
 export const toUInt8Array = (addr: string | number) => {
-  if (typeof addr === "string" && addr.includes(":")) {
+  if (typeof addr === 'string' && addr.includes(':')) {
     return v6toUInt8Array(addr);
   }
   return v4toUInt8Array(addr);
@@ -342,7 +342,7 @@ const bufferToString = (buf: Buffer, offset?: number, length?: number) => {
   length = length || buf.length - offset;
 
   if (length === 4) {
-    return buf.subarray(offset, offset + length).join(".");
+    return buf.subarray(offset, offset + length).join('.');
   }
 
   if (length === 16) {
@@ -355,7 +355,7 @@ const bufferToString = (buf: Buffer, offset?: number, length?: number) => {
     return compressv6(words);
   }
 
-  throw new Error("invalid ip address");
+  throw new Error('invalid ip address');
 };
 
 /**
@@ -378,11 +378,11 @@ export const toString = (
   }
 
   if (bytes instanceof Uint8Array === false) {
-    throw new Error("argument must be Buffer or a Uint8Array");
+    throw new Error('argument must be Buffer or a Uint8Array');
   }
 
   if (bytes.length === 4) {
-    return bytes.join(".");
+    return bytes.join('.');
   }
 
   if (bytes.length === 16) {
@@ -395,7 +395,7 @@ export const toString = (
     return compressv6(words);
   }
 
-  throw new Error("invalid ip address");
+  throw new Error('invalid ip address');
 };
 
 /**
@@ -409,12 +409,12 @@ export const toString = (
  */
 export const fromPrefixLen = (prefixLength: number, family?: Family) => {
   if (prefixLength > 32) {
-    family = "ipv6";
+    family = 'ipv6';
   } else {
     family = normalizeFamily(family);
   }
 
-  const len = family === "ipv6" ? 16 : 4;
+  const len = family === 'ipv6' ? 16 : 4;
   const bytes = new Uint8Array(len);
 
   for (let i = 0; i < len; i += 1) {
@@ -474,7 +474,7 @@ export const mask = (addr: string, subnetMask: string) => {
     return toString(result);
   }
 
-  throw new Error("invalid ip address");
+  throw new Error('invalid ip address');
 };
 
 /**
@@ -485,7 +485,7 @@ export const mask = (addr: string, subnetMask: string) => {
  * @param cidrString An IP address with a CIDR mask
  */
 export const cidr = (cidrString: string) => {
-  const [addr, prefixLength, ...rest] = cidrString.split("/");
+  const [addr, prefixLength, ...rest] = cidrString.split('/');
 
   if (rest.length !== 0) {
     throw new Error(`invalid CIDR subnet: ${addr}`);
@@ -550,7 +550,7 @@ export const subnet = (addr: string, subnetMask: string): SubnetData => {
     subnetMaskLength: maskLength,
     numHosts: numberOfAddresses > 2 ? numberOfAddresses - 2 : numberOfAddresses,
     length: numberOfAddresses,
-    contains: (other) => addressLong === toLong(mask(other, subnetMask)),
+    contains: other => addressLong === toLong(mask(other, subnetMask)),
   };
 };
 
@@ -573,7 +573,7 @@ export const subnet = (addr: string, subnetMask: string): SubnetData => {
  * @param cidrString An IP address with a CIDR mask
  */
 export const cidrSubnet = (cidrString: string) => {
-  const [addr, prefixLength, ...rest] = cidrString.split("/");
+  const [addr, prefixLength, ...rest] = cidrString.split('/');
 
   if (rest.length !== 0) {
     throw new Error(`invalid CIDR subnet: ${addr}`);
@@ -712,7 +712,7 @@ export const isLoopback = (addr: string | number) => {
     return bytes[0] === 127;
   }
 
-  return bytes[15] === 1 && bytes.slice(0, -1).every((byte) => byte === 0);
+  return bytes[15] === 1 && bytes.slice(0, -1).every(byte => byte === 0);
 };
 
 /**
@@ -777,7 +777,7 @@ export const isReserved = (addr: string | number) => {
     }
 
     // 255.255.255.255
-    if (bytes.every((byte) => byte === 255)) {
+    if (bytes.every(byte => byte === 255)) {
       return true;
     }
 
@@ -843,12 +843,12 @@ export const isReserved = (addr: string | number) => {
   }
 
   // ::
-  if (bytes.every((byte) => byte === 0)) {
+  if (bytes.every(byte => byte === 0)) {
     return true;
   }
 
   // ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
-  return bytes.every((byte) => byte === 0xff);
+  return bytes.every(byte => byte === 0xff);
 };
 
 /**
@@ -930,7 +930,7 @@ export const isPrivate = (addr: string | number) => {
  * @param addr The IP address to test
  */
 export const isPublic = (addr: string | number) => {
-  if (typeof addr === "string" && net.isIP(addr) === 0) {
+  if (typeof addr === 'string' && net.isIP(addr) === 0) {
     return false;
   }
 
@@ -951,11 +951,11 @@ export const isPublic = (addr: string | number) => {
  */
 export const loopback = (family?: Family) => {
   family = normalizeFamily(family);
-  if (family !== "ipv4" && family !== "ipv6") {
-    throw new Error("family must be ipv4 or ipv6");
+  if (family !== 'ipv4' && family !== 'ipv6') {
+    throw new Error('family must be ipv4 or ipv6');
   }
 
-  return family === "ipv4" ? "127.0.0.1" : "fe80::1";
+  return family === 'ipv4' ? '127.0.0.1' : '::1';
 };
 
 /**
@@ -970,7 +970,7 @@ export const loopback = (family?: Family) => {
  * ```
  */
 export const address = (
-  name?: string | "public" | "private",
+  name?: string | 'public' | 'private',
   family?: Family
 ) => {
   const interfaces = os.networkInterfaces();
@@ -979,8 +979,8 @@ export const address = (
   family = normalizeFamily(family);
 
   // If a specific interface has been named, return an address from there
-  if (name && name !== "public" && name !== "private") {
-    const res = interfaces[name]?.filter((details) => {
+  if (name && name !== 'public' && name !== 'private') {
+    const res = interfaces[name]?.filter(details => {
       const itemFamily = normalizeFamily(details.family);
       return itemFamily === family;
     });
@@ -992,12 +992,12 @@ export const address = (
     return res[0]!.address;
   }
 
-  const inter = Object.values(interfaces).flatMap((nic) => {
+  const inter = Object.values(interfaces).flatMap(nic => {
     if (!nic) {
       return [];
     }
 
-    return nic.filter((details) => {
+    return nic.filter(details => {
       // If this is the loopback or local link, discard it
       if (isLoopback(details.address) || isLinkLocal(details.address)) {
         return false;
@@ -1014,11 +1014,11 @@ export const address = (
       }
 
       // If the name is `public`, return only public addresses
-      if (name === "public" && isPublic(details.address)) {
+      if (name === 'public' && isPublic(details.address)) {
         return true;
       }
 
-      if (name === "private" && isPrivate(details.address)) {
+      if (name === 'private' && isPrivate(details.address)) {
         return true;
       }
 
@@ -1044,7 +1044,7 @@ export const address = (
 export const toLong = (addr: string) => {
   const bytes = toUInt8Array(addr);
   if (bytes.length !== 4) {
-    throw new Error("invalid ip address");
+    throw new Error('invalid ip address');
   }
   return bytes.reduce((acc, byte) => acc * 256 + byte, 0);
 };
@@ -1059,7 +1059,7 @@ export const toLong = (addr: string) => {
  */
 export const fromLong = (int32: number) => {
   if (int32 >>> 0 !== int32) {
-    throw new Error("invalid long value");
+    throw new Error('invalid long value');
   }
   return `${int32 >>> 24}.${(int32 >> 16) & 255}.${(int32 >> 8) & 255}.${int32 & 255}`;
 };
