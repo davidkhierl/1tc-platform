@@ -22,6 +22,7 @@ import allo from './registration/allo.js';
 import auth from './registration/auth.js';
 import eprt from './registration/eprt.js';
 import port from './registration/port.js';
+import epsv from './registration/epsv.js';
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -49,6 +50,7 @@ const commands: CommandRegistry[] = [
   cwd,
   dele,
   eprt,
+  epsv,
   feat,
   help,
   list,
