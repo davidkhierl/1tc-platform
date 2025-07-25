@@ -12,7 +12,7 @@ export function long2ip(long: number): string {
   const b = (long & (0xff << 16)) >>> 16;
   const c = (long & (0xff << 8)) >>> 8;
   const d = long & 0xff;
-  return [a, b, c, d].join(".");
+  return [a, b, c, d].join('.');
 }
 
 /**
@@ -29,8 +29,8 @@ export function ip2long(ip: string): number {
 
     if (i > 0) {
       const firstChar = remaining.charAt(0);
-      if (firstChar !== ".") {
-        throw new Error("Invalid IP");
+      if (firstChar !== '.') {
+        throw new Error('Invalid IP');
       }
       remaining = remaining.substring(1);
     }
@@ -41,14 +41,14 @@ export function ip2long(ip: string): number {
   }
 
   if (remaining.length !== 0) {
-    throw new Error("Invalid IP");
+    throw new Error('Invalid IP');
   }
 
   switch (octets.length) {
     case 1: {
       const octet0 = octets[0];
       if (octet0 === undefined || octet0 > 0xffffffff) {
-        throw new Error("Invalid IP");
+        throw new Error('Invalid IP');
       }
       return octet0 >>> 0;
     }
@@ -61,7 +61,7 @@ export function ip2long(ip: string): number {
         octet0 > 0xff ||
         octet1 > 0xffffff
       ) {
-        throw new Error("Invalid IP");
+        throw new Error('Invalid IP');
       }
       return ((octet0 << 24) | octet1) >>> 0;
     }
@@ -76,7 +76,7 @@ export function ip2long(ip: string): number {
         octet1 > 0xff ||
         octet2 > 0xffff
       ) {
-        throw new Error("Invalid IP");
+        throw new Error('Invalid IP');
       }
       return ((octet0 << 24) | (octet1 << 16) | octet2) >>> 0;
     }
@@ -88,15 +88,15 @@ export function ip2long(ip: string): number {
         octet1 === undefined ||
         octet2 === undefined ||
         octet3 === undefined ||
-        octets.some((octet) => octet > 0xff)
+        octets.some(octet => octet > 0xff)
       ) {
-        throw new Error("Invalid IP");
+        throw new Error('Invalid IP');
       }
       return ((octet0 << 24) | (octet1 << 16) | (octet2 << 8) | octet3) >>> 0;
     }
 
     default:
-      throw new Error("Invalid IP");
+      throw new Error('Invalid IP');
   }
 }
 
@@ -106,18 +106,18 @@ export function ip2long(ip: string): number {
 function parseOctet(s: string): ParseResult {
   let value = 0;
   let base = 10;
-  let maxDigit = "9";
+  let maxDigit = '9';
   let index = 0;
 
-  if (s.length > 1 && s.charAt(index) === "0") {
+  if (s.length > 1 && s.charAt(index) === '0') {
     const nextChar = s.charAt(index + 1);
-    if (nextChar === "x" || nextChar === "X") {
+    if (nextChar === 'x' || nextChar === 'X') {
       index += 2;
       base = 16;
-    } else if (nextChar >= "0" && nextChar <= "9") {
+    } else if (nextChar >= '0' && nextChar <= '9') {
       index++;
       base = 8;
-      maxDigit = "7";
+      maxDigit = '7';
     }
   }
 
@@ -126,15 +126,15 @@ function parseOctet(s: string): ParseResult {
   while (index < s.length) {
     const char = s.charAt(index);
 
-    if (char >= "0" && char <= maxDigit) {
-      value = (value * base + (char.charCodeAt(0) - "0".charCodeAt(0))) >>> 0;
+    if (char >= '0' && char <= maxDigit) {
+      value = (value * base + (char.charCodeAt(0) - '0'.charCodeAt(0))) >>> 0;
     } else if (base === 16) {
-      if (char >= "a" && char <= "f") {
+      if (char >= 'a' && char <= 'f') {
         value =
-          (value * base + (10 + char.charCodeAt(0) - "a".charCodeAt(0))) >>> 0;
-      } else if (char >= "A" && char <= "F") {
+          (value * base + (10 + char.charCodeAt(0) - 'a'.charCodeAt(0))) >>> 0;
+      } else if (char >= 'A' && char <= 'F') {
         value =
-          (value * base + (10 + char.charCodeAt(0) - "A".charCodeAt(0))) >>> 0;
+          (value * base + (10 + char.charCodeAt(0) - 'A'.charCodeAt(0))) >>> 0;
       } else {
         break;
       }
@@ -143,14 +143,14 @@ function parseOctet(s: string): ParseResult {
     }
 
     if (value > 0xffffffff) {
-      throw new Error("Number too large");
+      throw new Error('Number too large');
     }
 
     index++;
   }
 
   if (index === start) {
-    throw new Error("Empty octet");
+    throw new Error('Empty octet');
   }
 
   return [value, index];
@@ -172,7 +172,7 @@ export class Netmask {
   public readonly broadcast?: string;
 
   constructor(net: string, mask?: string | number) {
-    if (typeof net !== "string") {
+    if (typeof net !== 'string') {
       throw new Error("Missing 'net' parameter");
     }
 
@@ -181,7 +181,7 @@ export class Netmask {
 
     // Parse CIDR notation
     if (!networkMask) {
-      const parts = net.split("/", 2);
+      const parts = net.split('/', 2);
       const networkPart = parts[0];
       if (networkPart) {
         networkAddress = networkPart;
@@ -195,7 +195,7 @@ export class Netmask {
     }
 
     // Parse mask
-    if (typeof networkMask === "string" && networkMask.includes(".")) {
+    if (typeof networkMask === 'string' && networkMask.includes('.')) {
       // Dotted decimal mask
       try {
         this.maskLong = ip2long(networkMask);
@@ -253,7 +253,7 @@ export class Netmask {
         return i;
       }
     }
-    throw new Error("Invalid subnet mask");
+    throw new Error('Invalid subnet mask');
   }
 
   /**
@@ -261,8 +261,8 @@ export class Netmask {
    */
   contains(ip: string | Netmask): boolean {
     if (
-      typeof ip === "string" &&
-      (ip.includes("/") || ip.split(".").length !== 4)
+      typeof ip === 'string' &&
+      (ip.includes('/') || ip.split('.').length !== 4)
     ) {
       return this.contains(new Netmask(ip));
     }
