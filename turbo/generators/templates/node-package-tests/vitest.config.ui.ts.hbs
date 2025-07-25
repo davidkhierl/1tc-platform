@@ -1,0 +1,11 @@
+import { defineConfig } from 'vitest/config';
+import { uiConfig } from '@1tc/vitest-config';
+
+export default defineConfig({
+  ...uiConfig,
+  test: {
+    ...uiConfig.test,
+    // UI-specific overrides if needed
+    setupFiles: ['./src/test/setup.ts'],
+  },
+});
