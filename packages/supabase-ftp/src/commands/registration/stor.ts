@@ -1,25 +1,25 @@
-import { Readable, Writable } from "node:stream";
-import { CommandRegistry } from "../registry.js";
-import { Socket } from "node:net";
-import { TimeoutError } from "../../errors.js";
+import { Readable, Writable } from 'node:stream';
+import { CommandRegistry } from '../registry.js';
+import { Socket } from 'node:net';
+import { TimeoutError } from '../../errors.js';
 
 const stor: CommandRegistry = {
-  directive: "STOR",
+  directive: 'STOR',
   handler: async function ({ command }) {
     const fs = this.fs;
-    if (!fs) return this.reply(550, "File system not instantiated");
-    if (!fs.write) return this.reply(402, "Not supported by file system");
+    if (!fs) return this.reply(550, 'File system not instantiated');
+    if (!fs.write) return this.reply(402, 'Not supported by file system');
 
     const fileName = command.arg;
 
     if (!fileName)
-      return this.reply(501, "Syntax error in parameters or arguments");
+      return this.reply(501, 'Syntax error in parameters or arguments');
 
     return this.connector
       .waitForConnection()
       .then(() => this.commandSocket.pause())
       .then(() => fs.write(fileName))
-      .then(async (fsResponse) => {
+      .then(async fsResponse => {
         let { stream, clientPath } = fsResponse;
         if (!stream && !clientPath) {
           stream = fsResponse as unknown as Readable | Writable;
@@ -53,10 +53,10 @@ const stor: CommandRegistry = {
 
         const streamPromise = new Promise<void>((resolve, reject) => {
           stream.once(
-            "error",
+            'error',
             destroyConnection(this.connector.socket, reject)
           );
-          stream.once("finish", () => resolve());
+          stream.once('finish', () => resolve());
         });
 
         const socketPromise = new Promise<void>((resolve, reject) => {
@@ -66,13 +66,13 @@ const stor: CommandRegistry = {
             stream instanceof Writable
           ) {
             this.connector.socket.pipe(stream, { end: false });
-            this.connector.socket.once("end", () => {
-              if (stream.listenerCount("close")) stream.emit("close");
+            this.connector.socket.once('end', () => {
+              if (stream.listenerCount('close')) stream.emit('close');
               else stream.end();
               resolve(void 0);
             });
             this.connector.socket.once(
-              "error",
+              'error',
               destroyConnection(stream, reject)
             );
           }
@@ -83,15 +83,15 @@ const stor: CommandRegistry = {
         return Promise.resolve()
           .then(() => this.connector.socket && this.connector.socket.resume())
           .then(() => Promise.all([streamPromise, socketPromise]))
-          .then(() => this.emit("STOR", null, serverPath))
+          .then(() => this.emit('STOR', null, serverPath))
           .then(() => this.reply(226, clientPath));
       })
-      .catch((err) => {
+      .catch(err => {
         console.error(err);
         if (err instanceof TimeoutError) {
-          return this.reply(425, "No connection established");
+          return this.reply(425, 'No connection established');
         }
-        this.emit("STOR", err);
+        this.emit('STOR', err);
         return this.reply(550, err.message);
       })
       .then(() => {
@@ -99,8 +99,8 @@ const stor: CommandRegistry = {
         this.commandSocket.resume();
       });
   },
-  syntax: "{{cmd}} <path>",
-  description: "Store data as a file at the server site",
+  syntax: '{{cmd}} <path>',
+  description: 'Store data as a file at the server site',
 };
 
 export default stor;

@@ -1,18 +1,18 @@
-import { Socket } from "node:net";
-import { TimeoutError } from "../../errors.js";
-import { CommandRegistry } from "../registry.js";
-import { Readable, Writable } from "node:stream";
+import { Socket } from 'node:net';
+import { TimeoutError } from '../../errors.js';
+import { CommandRegistry } from '../registry.js';
+import { Readable, Writable } from 'node:stream';
 
 const retr: CommandRegistry = {
-  directive: "RETR",
+  directive: 'RETR',
   handler: async function ({ command }) {
     const fs = this.fs;
-    if (!fs) return this.reply(550, "File system not instantiated");
-    if (!fs.read) return this.reply(402, "Not supported by file system");
+    if (!fs) return this.reply(550, 'File system not instantiated');
+    if (!fs.read) return this.reply(402, 'Not supported by file system');
 
     const filePath = command.arg;
 
-    if (!filePath) return this.reply(501, "No file path specified");
+    if (!filePath) return this.reply(501, 'No file path specified');
 
     return this.connector
       .waitForConnection()
@@ -20,14 +20,14 @@ const retr: CommandRegistry = {
         this.commandSocket.pause();
       })
       .then(() => fs.get(filePath))
-      .then((fileStat) => {
+      .then(fileStat => {
         if (fileStat.isDirectory()) {
-          throw new Error("Cannot retrieve a directory");
+          throw new Error('Cannot retrieve a directory');
         }
 
         return fs.read(filePath, { start: this.restByteCount });
       })
-      .then(async (fsResponse) => {
+      .then(async fsResponse => {
         let { stream, clientPath } = fsResponse;
         if (!stream && !clientPath) {
           stream = fsResponse as unknown as Readable | Writable;
@@ -62,53 +62,53 @@ const retr: CommandRegistry = {
         const eventsPromise = new Promise<void>((resolve, reject) => {
           let totalBytes = 0;
 
-          stream.on("data", (data) => {
+          stream.on('data', data => {
             totalBytes += data.length;
             if (this.connector.socket && this.connector.socket.writable) {
               this.connector.socket.write(data);
             } else {
-              reject(new Error("Data connection lost"));
+              reject(new Error('Data connection lost'));
             }
           });
 
-          stream.once("end", () => {
+          stream.once('end', () => {
             console.log(`File transfer completed: ${totalBytes} bytes sent`);
             resolve(void 0);
           });
 
-          stream.once("error", (err) => {
-            console.error("Stream error:", err);
+          stream.once('error', err => {
+            console.error('Stream error:', err);
             destroyConnection(this.connector.socket, reject)(err);
           });
 
-          this.connector.socket?.once("error", (err) => {
-            console.error("Data connection error:", err);
+          this.connector.socket?.once('error', err => {
+            console.error('Data connection error:', err);
             destroyConnection(stream, reject)(err);
           });
 
-          this.connector.socket?.once("close", () => {
-            console.log("Data connection closed");
+          this.connector.socket?.once('close', () => {
+            console.log('Data connection closed');
           });
         });
 
         this.restByteCount = 0;
 
         return eventsPromise
-          .then(() => this.emit("RETR", null, serverPath))
+          .then(() => this.emit('RETR', null, serverPath))
           .then(() => this.reply(226, `Transfer complete for ${clientPath}`))
           .then(() => {
             if (stream.destroy) stream.destroy();
           });
       })
-      .catch((err) => {
-        console.error("RETR error:", err);
+      .catch(err => {
+        console.error('RETR error:', err);
         if (err && err instanceof TimeoutError) {
-          return this.reply(425, "No connection established");
+          return this.reply(425, 'No connection established');
         }
-        this.emit("RETR", err);
+        this.emit('RETR', err);
         return this.reply(
           550,
-          err.message || "File not found or cannot be retrieved"
+          err.message || 'File not found or cannot be retrieved'
         );
       })
       .then(() => {
@@ -116,8 +116,8 @@ const retr: CommandRegistry = {
         this.commandSocket.resume();
       });
   },
-  syntax: "{{cmd}} <path>",
-  description: "Retrieve a file",
+  syntax: '{{cmd}} <path>',
+  description: 'Retrieve a file',
 };
 
 export default retr;

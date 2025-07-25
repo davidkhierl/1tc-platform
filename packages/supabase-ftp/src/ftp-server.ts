@@ -1,12 +1,12 @@
-import tls from "node:tls";
-import net from "node:net";
-import { Stats } from "node:fs";
-import EventEmitter from "node:events";
-import { getNextPortFactory } from "./helpers/find-port.js";
-import { Connection } from "./connection.js";
-import { SupabaseClient } from "@supabase/supabase-js";
-import FileSystem from "./fs/fs.js";
-import { SupabaseFtpError } from "./errors.js";
+import tls from 'node:tls';
+import net from 'node:net';
+import { Stats } from 'node:fs';
+import EventEmitter from 'node:events';
+import { getNextPortFactory } from './helpers/find-port.js';
+import { Connection } from './connection.js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import FileSystem from './fs/fs.js';
+import { SupabaseFtpError } from './errors.js';
 
 export interface FtpServerOptions {
   url: string;
@@ -14,7 +14,7 @@ export interface FtpServerOptions {
   passiveHostname: string | null | ((ip?: string | null) => string);
   greeting?: string | string[];
   anonymous: boolean;
-  listFormat: "ls" | "ep";
+  listFormat: 'ls' | 'ep';
   blacklist: string[];
   whitelist: string[];
   tls?: tls.TlsOptions;
@@ -44,8 +44,8 @@ export interface FtpServerEvent {
   disconnect: [
     { id: string; connection: Connection; newConnectionCount: number },
   ];
-  "client-error": [{ connection: Connection; context: string; error: Error }];
-  "server-error": [{ error: Error }];
+  'client-error': [{ connection: Connection; context: string; error: Error }];
+  'server-error': [{ error: Error }];
   closing: [];
   closed: [];
 }
@@ -76,7 +76,7 @@ type EventResolveType<T extends readonly unknown[]> = T extends readonly [
 export class FtpServer extends EventEmitter<FtpServerEvent> {
   options: FtpServerOptions;
   private _greeting: string[] = [];
-  private _features: string = "";
+  private _features: string = '';
   private _connections: Map<string, Connection> = new Map();
   readonly url: URL;
   readonly server: net.Server;
@@ -110,23 +110,23 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
       let connection = new Connection(this, socket);
       this._connections.set(connection.id, connection);
 
-      socket.on("close", () => this.disconnectClient(connection.id));
-      socket.once("close", () => {
-        this.emit("disconnect", {
+      socket.on('close', () => this.disconnectClient(connection.id));
+      socket.once('close', () => {
+        this.emit('disconnect', {
           id: connection.id,
           connection,
           newConnectionCount: this._connections.size,
         });
       });
 
-      this.emit("connect", {
+      this.emit('connect', {
         id: connection.id,
         connection,
         newConnectionCount: this._connections.size,
       });
 
       const greeting = this._greeting || [];
-      const features = this._features || "Ready";
+      const features = this._features || 'Ready';
       return connection
         .reply(220, ...greeting, features)
         .then(() => socket.resume());
@@ -148,9 +148,9 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
         serverConnectionHandler
       );
 
-    this.server.on("error", (err) => {
-      console.error("Server error:", err);
-      this.emit("server-error", { error: err });
+    this.server.on('error', err => {
+      console.error('Server error:', err);
+      this.emit('server-error', { error: err });
     });
 
     const quit = (() => {
@@ -165,28 +165,28 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
     })();
 
     if (this.options.endOnProcessSignal) {
-      process.on("SIGINT", quit);
-      process.on("SIGTERM", quit);
-      process.on("SIGQUIT", quit);
+      process.on('SIGINT', quit);
+      process.on('SIGTERM', quit);
+      process.on('SIGQUIT', quit);
     }
   }
 
   get isTLS() {
-    return this.url.protocol === "ftps:" && !!this.options.tls;
+    return this.url.protocol === 'ftps:' && !!this.options.tls;
   }
 
   listen(cb?: (host: FtpServerHost) => void) {
     if (!this.options.passiveHostname)
       console.warn(
-        "Passive host is not set. Passive connections not available."
+        'Passive host is not set. Passive connections not available.'
       );
 
     return new Promise<FtpServerHost>((resolve, reject) => {
-      this.server.once("error", reject);
+      this.server.once('error', reject);
       this.server.listen(Number(this.url.port), this.url.hostname, () => {
-        this.server.removeListener("error", reject);
+        this.server.removeListener('error', reject);
         const host = {
-          protocol: this.url.protocol.replace(/\W/g, ""),
+          protocol: this.url.protocol.replace(/\W/g, ''),
           ip: this.url.hostname,
           port: Number(this.url.port),
         };
@@ -208,18 +208,18 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
 
   setupGreeting(greeting?: string | string[]) {
     if (!greeting) return [];
-    return Array.isArray(greeting) ? greeting : greeting.split("\n");
+    return Array.isArray(greeting) ? greeting : greeting.split('\n');
   }
 
   setupFeaturesMessage() {
     let features = [];
-    if (this.options.anonymous) features.push("a");
+    if (this.options.anonymous) features.push('a');
 
     if (features.length) {
-      features.unshift("Features:");
-      features.push(".");
+      features.unshift('Features:');
+      features.push('.');
     }
-    return features.length ? features.join(" ") : "Ready";
+    return features.length ? features.join(' ') : 'Ready';
   }
 
   disconnectClient(id: string) {
@@ -251,20 +251,20 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
 
   async close() {
     this.server.maxConnections = 0;
-    this.emit("closing");
+    this.emit('closing');
 
     return Promise.all(
       Array.from(this._connections.entries()).map(([id]) =>
         this.disconnectClient(id)
       )
     ).then(() =>
-      new Promise((resolve) => {
-        this.server.close((err) => {
-          if (err) console.error("Error closing server:", err);
+      new Promise(resolve => {
+        this.server.close(err => {
+          if (err) console.error('Error closing server:', err);
           resolve(!err);
         });
       }).then(() => {
-        this.emit("closed");
+        this.emit('closed');
         this.removeAllListeners();
         return;
       })

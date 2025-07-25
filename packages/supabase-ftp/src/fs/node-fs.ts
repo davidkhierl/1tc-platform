@@ -1,5 +1,5 @@
-import nodePath from "path";
-import { randomBytes } from "crypto";
+import nodePath from 'path';
+import { randomBytes } from 'crypto';
 import {
   accessSync,
   chmodSync,
@@ -12,10 +12,10 @@ import {
   rmdirSync,
   statSync,
   unlinkSync,
-} from "fs";
-import { Connection } from "../connection.js";
-import { FileSystemError } from "../errors.js";
-import FileSystem, { FileStats } from "./fs.js";
+} from 'fs';
+import { Connection } from '../connection.js';
+import { FileSystemError } from '../errors.js';
+import FileSystem, { FileStats } from './fs.js';
 
 class NodeFileSystem extends FileSystem {
   constructor(
@@ -26,7 +26,7 @@ class NodeFileSystem extends FileSystem {
   }
 
   protected normalizePath(path: string): string {
-    return nodePath.normalize(path).replace(/[/\\]+/g, "/");
+    return nodePath.normalize(path).replace(/[/\\]+/g, '/');
   }
 
   protected resolveRootPath(root?: string): string {
@@ -38,37 +38,37 @@ class NodeFileSystem extends FileSystem {
     }
   }
 
-  protected _resolvePath(dir = ".") {
+  protected _resolvePath(dir = '.') {
     // Use node's path module for normalization
-    const normalizedPath = nodePath.normalize(dir).replace(/[/\\]+/g, "/");
+    const normalizedPath = nodePath.normalize(dir).replace(/[/\\]+/g, '/');
 
     // Join cwd with new path
     let clientPath = nodePath.isAbsolute(normalizedPath)
       ? normalizedPath
-      : nodePath.join(this.cwd, normalizedPath).replace(/[/\\]+/g, "/");
+      : nodePath.join(this.cwd, normalizedPath).replace(/[/\\]+/g, '/');
 
     // Ensure clientPath starts with a leading slash
-    if (!clientPath.startsWith("/")) {
-      clientPath = "/" + clientPath;
+    if (!clientPath.startsWith('/')) {
+      clientPath = '/' + clientPath;
     }
 
     // Prevent escaping root: clamp to '/'
-    const segments = clientPath.split("/").filter(Boolean);
+    const segments = clientPath.split('/').filter(Boolean);
     let safeSegments = [];
     for (const seg of segments) {
-      if (seg === "..") {
+      if (seg === '..') {
         if (safeSegments.length > 0) safeSegments.pop();
-      } else if (seg !== ".") {
+      } else if (seg !== '.') {
         safeSegments.push(seg);
       }
     }
-    clientPath = "/" + safeSegments.join("/");
+    clientPath = '/' + safeSegments.join('/');
 
     // For fsPath, join root with clientPath, but avoid double-absolute path on Windows
     let fsPath = nodePath.join(this._root, clientPath.slice(1));
 
     // Convert fsPath to use forward slashes
-    fsPath = fsPath.replace(/\\/g, "/");
+    fsPath = fsPath.replace(/\\/g, '/');
 
     return {
       clientPath,
@@ -76,19 +76,19 @@ class NodeFileSystem extends FileSystem {
     };
   }
 
-  chdir(path = ".") {
+  chdir(path = '.') {
     const { clientPath, fsPath } = this._resolvePath(path);
     const statObj = statSync(fsPath);
     if (!statObj.isDirectory())
-      throw new FileSystemError("Not a valid directory");
+      throw new FileSystemError('Not a valid directory');
     this.cwd = clientPath;
     return this.currentDirectory();
   }
 
-  list(path = ".") {
+  list(path = '.') {
     const { fsPath } = this._resolvePath(path);
     const fileNames = readdirSync(fsPath);
-    const results = fileNames.map((fileName) => {
+    const results = fileNames.map(fileName => {
       const filePath = nodePath.join(fsPath, fileName);
       try {
         accessSync(filePath, constants.F_OK);
@@ -124,17 +124,17 @@ class NodeFileSystem extends FileSystem {
   ) {
     const { fsPath, clientPath } = this._resolvePath(fileName);
     const stream = createWriteStream(fsPath, {
-      flags: !append ? "w+" : "a+",
+      flags: !append ? 'w+' : 'a+',
       start,
     });
-    stream.once("error", async () => {
+    stream.once('error', async () => {
       try {
         unlinkSync(fsPath);
       } catch {
         /* ignore error */
       }
     });
-    stream.once("close", () => stream.end());
+    stream.once('close', () => stream.end());
     return {
       stream,
       clientPath,
@@ -144,9 +144,9 @@ class NodeFileSystem extends FileSystem {
   read(fileName: string, { start = undefined }: { start?: number } = {}) {
     const { clientPath, fsPath } = this._resolvePath(fileName);
     if (statSync(fsPath).isDirectory()) {
-      throw new FileSystemError("Cannot read a directory");
+      throw new FileSystemError('Cannot read a directory');
     }
-    const stream = createReadStream(fsPath, { flags: "r", start });
+    const stream = createReadStream(fsPath, { flags: 'r', start });
     return {
       stream,
       clientPath,
@@ -178,7 +178,7 @@ class NodeFileSystem extends FileSystem {
   }
 
   getUniqueName() {
-    const randomPart = randomBytes(8).toString("hex");
+    const randomPart = randomBytes(8).toString('hex');
     const timestampPart = Date.now().toString(36);
     return `${timestampPart}-${randomPart}`;
   }

@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.{ts,tsx,js,jsx,mjs,json,yaml,yml,md}"
+applyTo: '**/*.{ts,tsx,js,jsx,mjs,json,yaml,yml,md}'
 ---
 
 # GitHub Copilot Instructions

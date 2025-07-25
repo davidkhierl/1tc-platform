@@ -1,15 +1,15 @@
-import net from "node:net";
-import tls from "node:tls";
-import { Connection } from "../connection.js";
-import { Connector } from "./base.js";
-import { isEqual } from "@1tc/utils/ip";
-import { SocketError } from "../errors.js";
-import { Socket } from "node:net";
+import net from 'node:net';
+import tls from 'node:tls';
+import { Connection } from '../connection.js';
+import { Connector } from './base.js';
+import { isEqual } from '@1tc/utils/ip';
+import { SocketError } from '../errors.js';
+import { Socket } from 'node:net';
 
 export default class ActiveConnector extends Connector {
   constructor(connection: Connection) {
     super(connection);
-    this.type = "active";
+    this.type = 'active';
   }
 
   waitForConnection({ timeout = 5e3, delay = 250 } = {}) {
@@ -18,7 +18,7 @@ export default class ActiveConnector extends Connector {
 
       const timeoutId = setTimeout(() => {
         if (delayTimeoutId) clearTimeout(delayTimeoutId);
-        reject(new Error("FTP active connection timeout"));
+        reject(new Error('FTP active connection timeout'));
       }, timeout);
 
       const checkSocket = (): void => {
@@ -46,17 +46,17 @@ export default class ActiveConnector extends Connector {
       !this.connection.commandSocket.remoteAddress ||
       !isEqual(this.connection.commandSocket.remoteAddress, host)
     ) {
-      throw new SocketError("The given address is not yours", 500);
+      throw new SocketError('The given address is not yours', 500);
     }
 
     return new Promise((resolve, reject) => {
       this.dataSocket = new Socket();
 
-      this.dataSocket.on("error", (err) => {
+      this.dataSocket.on('error', err => {
         if (this.server) {
-          this.server.emit("client-error", {
+          this.server.emit('client-error', {
             connection: this.connection,
-            context: "dataSocket",
+            context: 'dataSocket',
             error: err,
           });
         }

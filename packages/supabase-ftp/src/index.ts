@@ -1,15 +1,15 @@
-import "node:net";
-import "node:tls";
-import { FtpServer, FtpServerOptions } from "./ftp-server.js";
-import { SupabaseClient } from "@supabase/supabase-js";
+import 'node:net';
+import 'node:tls';
+import { FtpServer, FtpServerOptions } from './ftp-server.js';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-declare module "node:net" {
+declare module 'node:net' {
   interface Socket {
     connected?: boolean;
   }
 }
 
-declare module "node:tls" {
+declare module 'node:tls' {
   interface TLSSocket {
     connected?: boolean;
   }
@@ -23,11 +23,11 @@ export function createFtpServer(
   options: Partial<FtpServerOptions>
 ): FtpServer {
   return new FtpServer(supabase, {
-    url: "ftp://127.0.1:21",
+    url: 'ftp://127.0.1:21',
     passivePortRange: [PASV_MIN, PASV_MAX],
     passiveHostname: null,
     anonymous: false,
-    listFormat: "ls",
+    listFormat: 'ls',
     blacklist: [],
     whitelist: [],
     timeout: 0,

@@ -1,25 +1,25 @@
-import tls from "tls";
-import { CommandRegistry } from "../registry.js";
-import { Connection } from "../../connection.js";
-import net from "net";
+import tls from 'tls';
+import { CommandRegistry } from '../registry.js';
+import { Connection } from '../../connection.js';
+import net from 'net';
 
 const auth: CommandRegistry = {
-  directive: "AUTH",
+  directive: 'AUTH',
   handler: function ({ command }) {
-    const method = (command.arg || "").toUpperCase();
+    const method = (command.arg || '').toUpperCase();
 
     switch (method) {
-      case "TLS":
+      case 'TLS':
         return handleTLS.call(this);
       default:
         return this.reply(504);
     }
   },
-  syntax: "{{cmd}} <type>",
-  description: "Set authentication mechanism",
+  syntax: '{{cmd}} <type>',
+  description: 'Set authentication mechanism',
   flags: {
     no_auth: true,
-    feat: "AUTH TLS",
+    feat: 'AUTH TLS',
   },
 };
 
@@ -33,7 +33,7 @@ async function handleTLS(this: Connection) {
       isServer: true,
       secureContext,
     });
-    ["data", "timeout", "end", "close", "drain", "error"].forEach((event) => {
+    ['data', 'timeout', 'end', 'close', 'drain', 'error'].forEach(event => {
       function forwardEvent(this: net.Socket, ...args: any[]) {
         this.emit(event, ...args);
       }

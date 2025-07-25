@@ -1,12 +1,12 @@
-import net from "node:net";
-import { Connection } from "../connection.js";
-import { ConnectorError } from "../errors.js";
+import net from 'node:net';
+import { Connection } from '../connection.js';
+import { ConnectorError } from '../errors.js';
 
 export class Connector {
   readonly connection: Connection;
   dataSocket: net.Socket | null = null;
   dataServer: net.Server | null = null;
-  type: boolean | "active" | "passive" = false;
+  type: boolean | 'active' | 'passive' = false;
   connected = false;
 
   constructor(connection: Connection) {
@@ -23,13 +23,13 @@ export class Connector {
 
   waitForConnection(): Promise<net.Socket> {
     return Promise.reject(
-      new ConnectorError("No connector setup, send PASV or PORT")
+      new ConnectorError('No connector setup, send PASV or PORT')
     );
   }
 
   async setupServer(): Promise<net.Server> {
     return Promise.reject(
-      new ConnectorError("No connector setup, send PASV or PORT")
+      new ConnectorError('No connector setup, send PASV or PORT')
     );
   }
 

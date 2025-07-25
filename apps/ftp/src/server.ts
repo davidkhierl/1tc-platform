@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
-import { createFtpServer } from "@1tc/supabase-ftp";
-import { passiveHostname } from "@1tc/supabase-ftp/helpers/passive-hostname";
-import { GeneralError } from "@1tc/supabase-ftp/errors";
+import { createClient } from '@supabase/supabase-js';
+import { createFtpServer } from '@1tc/supabase-ftp';
+import { passiveHostname } from '@1tc/supabase-ftp/helpers/passive-hostname';
+import { GeneralError } from '@1tc/supabase-ftp/errors';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -9,22 +9,22 @@ const supabase = createClient(
 );
 
 const ftpServer = createFtpServer(supabase, {
-  url: "ftp://127.0.0.1:2121",
+  url: 'ftp://127.0.0.1:2121',
   anonymous: true,
   passiveHostname: passiveHostname,
 });
 
-ftpServer.on("login", ({ connection, username, password }, resolve, reject) => {
-  if (username === "anonymous") {
+ftpServer.on('login', ({ connection, username, password }, resolve, reject) => {
+  if (username === 'anonymous') {
     return resolve({
-      root: "/media-uploads-public",
-      cwd: "/",
+      root: '/media-uploads-public',
+      cwd: '/',
     });
   }
-  return reject(new GeneralError("Invalid username or password", 401));
+  return reject(new GeneralError('Invalid username or password', 401));
 });
 
-ftpServer.listen().then((host) => {
+ftpServer.listen().then(host => {
   console.log(
     `FTP server is running at ${host.protocol}://${host.ip}:${host.port}`
   );

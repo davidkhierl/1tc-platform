@@ -1,12 +1,12 @@
-import { CommandRegistry } from "../registry.js";
+import { CommandRegistry } from '../registry.js';
 
 const syst: CommandRegistry = {
-  directive: "SYST",
+  directive: 'SYST',
   handler: function () {
     return this.reply(215);
   },
-  syntax: "{{cmd}}",
-  description: "Return system type",
+  syntax: '{{cmd}}',
+  description: 'Return system type',
   flags: {
     no_auth: true,
   },

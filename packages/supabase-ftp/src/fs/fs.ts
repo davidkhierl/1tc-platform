@@ -1,6 +1,6 @@
-import { Readable, Writable } from "node:stream";
-import { Connection } from "../connection.js";
-import { Promisable } from "@1tc/utils/types/promisable";
+import { Readable, Writable } from 'node:stream';
+import { Connection } from '../connection.js';
+import { Promisable } from '@1tc/utils/types/promisable';
 
 export interface FileStats {
   name: string;
@@ -27,7 +27,7 @@ abstract class FileSystem {
   ) {
     this.connection = connection;
     this._root = this.resolveRootPath(root);
-    this.cwd = this.normalizePath(cwd || "/");
+    this.cwd = this.normalizePath(cwd || '/');
   }
 
   get root() {

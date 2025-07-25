@@ -1,12 +1,12 @@
-import { CommandRegistry } from "../registry.js";
+import { CommandRegistry } from '../registry.js';
 
 const allo: CommandRegistry = {
-  directive: "ALLO",
+  directive: 'ALLO',
   handler: function () {
     return this.reply(202);
   },
-  syntax: "{{cmd}}",
-  description: "Allocate sufficient disk space to receive a file",
+  syntax: '{{cmd}}',
+  description: 'Allocate sufficient disk space to receive a file',
   flags: {
     obsolete: true,
   },

@@ -19,7 +19,7 @@ This platform includes the following packages/apps:
 ### Apps and Packages
 
 - `docs`: Documentation [Next.js](https://nextjs.org/) app
-- `web`: Main website [Next.js](https://nextjs.org/) app  
+- `web`: Main website [Next.js](https://nextjs.org/) app
 - `studio`: Studio application [Next.js](https://nextjs.org/) app
 - `ftp`: FTP server application
 - `@1tc/ui`: Shared React component library used across all applications
@@ -80,12 +80,14 @@ pnpm test
 ## Platform Architecture
 
 ### Applications
+
 - **Web**: Main customer-facing website
 - **Studio**: Internal studio management application
 - **Docs**: Documentation and developer resources
 - **FTP**: File transfer and media management server
 
 ### Shared Packages
+
 - **UI Library**: Consistent design system across all apps
 - **Utils**: Common utilities and helpers
 - **Configs**: Shared tooling configurations
@@ -113,4 +115,4 @@ Learn more about the tools powering this platform:
 
 ---
 
-**1Take Collective** - *One take, infinite possibilities.*
+**1Take Collective** - _One take, infinite possibilities._

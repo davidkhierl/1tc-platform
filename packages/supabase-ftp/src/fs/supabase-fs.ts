@@ -1,7 +1,7 @@
-import { PassThrough, Readable, Stream, Writable } from "node:stream";
-import tus from "tus-js-client";
-import { Connection } from "../connection.js";
-import FileSystem, { FileStats, StreamResult } from "./fs.js";
+import { PassThrough, Readable, Stream, Writable } from 'node:stream';
+import tus from 'tus-js-client';
+import { Connection } from '../connection.js';
+import FileSystem, { FileStats, StreamResult } from './fs.js';
 
 export default class SupabaseFileSystem extends FileSystem {
   private bucketName: string;
@@ -13,55 +13,55 @@ export default class SupabaseFileSystem extends FileSystem {
   ) {
     super(connection, options);
 
-    const normalizedRoot = this.normalizePath(options.root || "");
-    const segments = normalizedRoot.split("/").filter(Boolean);
+    const normalizedRoot = this.normalizePath(options.root || '');
+    const segments = normalizedRoot.split('/').filter(Boolean);
     this.bucketName = this._root; // This is already just the bucket name from resolveRootPath
-    this.bucketPrefix = segments.slice(1).join("/"); // Everything after the bucket name
+    this.bucketPrefix = segments.slice(1).join('/'); // Everything after the bucket name
   }
   protected normalizePath(path: string): string {
     return path
-      .replace(/[/\\]+/g, "/")
-      .replace(/^\/+|\/+$/g, "")
+      .replace(/[/\\]+/g, '/')
+      .replace(/^\/+|\/+$/g, '')
       .trim();
   }
 
   protected resolveRootPath(root?: string): string {
-    if (!root || root === "/" || root.trim() === "") {
+    if (!root || root === '/' || root.trim() === '') {
       throw new Error(
         "Invalid bucket name: root cannot be empty, '/', or whitespace"
       );
     }
 
     const normalizedRoot = this.normalizePath(root);
-    const bucketName = normalizedRoot.split("/")[0];
+    const bucketName = normalizedRoot.split('/')[0];
 
     if (
       !bucketName ||
       !/^[a-z0-9][a-z0-9-_]*[a-z0-9]$|^[a-z0-9]$/.test(bucketName)
     ) {
       throw new Error(
-        "Invalid bucket name: must contain only lowercase letters, numbers, hyphens, and underscores, " +
-          "start and end with alphanumeric characters"
+        'Invalid bucket name: must contain only lowercase letters, numbers, hyphens, and underscores, ' +
+          'start and end with alphanumeric characters'
       );
     }
 
     if (bucketName.length < 1 || bucketName.length > 63) {
       throw new Error(
-        "Invalid bucket name: must be between 1 and 63 characters long"
+        'Invalid bucket name: must be between 1 and 63 characters long'
       );
     }
 
     return bucketName;
   }
 
-  protected _resolvePath(dir = "."): { clientPath: string; fsPath: string } {
+  protected _resolvePath(dir = '.'): { clientPath: string; fsPath: string } {
     const normalizedDir = this.normalizePath(dir);
 
-    if (normalizedDir === "." || normalizedDir === "") {
+    if (normalizedDir === '.' || normalizedDir === '') {
       const fsPath =
-        this.cwd === "/"
+        this.cwd === '/'
           ? this.bucketPrefix
-          : this.normalizePath(this.cwd.replace(/^\/+/, ""));
+          : this.normalizePath(this.cwd.replace(/^\/+/, ''));
       return {
         clientPath: this.cwd,
         fsPath:
@@ -72,52 +72,52 @@ export default class SupabaseFileSystem extends FileSystem {
     }
 
     let clientPath: string;
-    if (dir.startsWith("/")) {
-      clientPath = "/" + normalizedDir;
+    if (dir.startsWith('/')) {
+      clientPath = '/' + normalizedDir;
     } else {
       const joinedPath = `${this.cwd}/${normalizedDir}`;
-      clientPath = "/" + this.normalizePath(joinedPath);
+      clientPath = '/' + this.normalizePath(joinedPath);
     }
 
-    const segments = clientPath.split("/").filter(Boolean);
+    const segments = clientPath.split('/').filter(Boolean);
     const safeSegments: string[] = [];
 
     for (const segment of segments) {
-      if (segment === "..") {
+      if (segment === '..') {
         if (safeSegments.length > 0) {
           safeSegments.pop();
         }
-      } else if (segment !== ".") {
+      } else if (segment !== '.') {
         safeSegments.push(segment);
       }
     }
 
-    clientPath = "/" + safeSegments.join("/");
+    clientPath = '/' + safeSegments.join('/');
 
-    let fsPath = this.normalizePath(clientPath.replace(/^\/+/, ""));
+    let fsPath = this.normalizePath(clientPath.replace(/^\/+/, ''));
     if (this.bucketPrefix) {
-      fsPath = this.bucketPrefix + (fsPath ? "/" + fsPath : "");
+      fsPath = this.bucketPrefix + (fsPath ? '/' + fsPath : '');
     }
 
     return { clientPath, fsPath };
   }
 
-  async chdir(path = "."): Promise<string> {
+  async chdir(path = '.'): Promise<string> {
     try {
-      if (path === "/") {
-        this.cwd = "/";
+      if (path === '/') {
+        this.cwd = '/';
         return this.cwd;
       }
 
       const { clientPath, fsPath } = this._resolvePath(path);
 
-      if (clientPath === "/") {
-        this.cwd = "/";
+      if (clientPath === '/') {
+        this.cwd = '/';
         return this.cwd;
       }
 
       if (!fsPath || fsPath === this.bucketPrefix) {
-        this.cwd = "/";
+        this.cwd = '/';
         return this.cwd;
       }
 
@@ -135,7 +135,7 @@ export default class SupabaseFileSystem extends FileSystem {
 
       if (error || !data.length || !data) {
         throw new Error(
-          `Directory does not exist or is not accessible${error ? `: ${error.message}` : ""}`
+          `Directory does not exist or is not accessible${error ? `: ${error.message}` : ''}`
         );
       }
 
@@ -143,12 +143,12 @@ export default class SupabaseFileSystem extends FileSystem {
       return this.cwd;
     } catch (error) {
       throw new Error(
-        `Cannot change directory to ${path}: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Cannot change directory to ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
 
-  async list(path = "."): Promise<FileStats[]> {
+  async list(path = '.'): Promise<FileStats[]> {
     try {
       const { fsPath } = this._resolvePath(path);
 
@@ -157,7 +157,7 @@ export default class SupabaseFileSystem extends FileSystem {
         .list(fsPath || undefined, {
           limit: 1000,
           offset: 0,
-          sortBy: { column: "name", order: "asc" },
+          sortBy: { column: 'name', order: 'asc' },
         });
 
       if (error) {
@@ -185,7 +185,7 @@ export default class SupabaseFileSystem extends FileSystem {
         };
       });
     } catch (error) {
-      console.error("Error listing directory:", error);
+      console.error('Error listing directory:', error);
       return [];
     }
   }
@@ -197,9 +197,9 @@ export default class SupabaseFileSystem extends FileSystem {
       const { data: fileData, error: fileError } =
         await this.connection.server.supabase.storage
           .from(this.bucketName)
-          .list(fsPath.split("/").slice(0, -1).join("/") || undefined, {
+          .list(fsPath.split('/').slice(0, -1).join('/') || undefined, {
             limit: 1000,
-            search: fsPath.split("/").pop(),
+            search: fsPath.split('/').pop(),
           });
 
       if (fileError) {
@@ -207,7 +207,7 @@ export default class SupabaseFileSystem extends FileSystem {
       }
 
       const file = fileData?.find(
-        (item) => item.name === fsPath.split("/").pop()
+        item => item.name === fsPath.split('/').pop()
       );
 
       if (file) {
@@ -236,7 +236,7 @@ export default class SupabaseFileSystem extends FileSystem {
 
       if (!dirError && dirData) {
         return {
-          name: fileName.split("/").pop() || fileName,
+          name: fileName.split('/').pop() || fileName,
           size: 0,
           mtime: new Date(),
           mode: 0o755,
@@ -264,14 +264,14 @@ export default class SupabaseFileSystem extends FileSystem {
 
       if (signedUrlError) {
         stream.emit(
-          "error",
+          'error',
           new Error(`Failed to get signed URL: ${signedUrlError.message}`)
         );
         return;
       }
 
       if (!signedUrlData?.signedUrl) {
-        stream.emit("error", new Error("No signed URL received"));
+        stream.emit('error', new Error('No signed URL received'));
         return;
       }
 
@@ -286,7 +286,7 @@ export default class SupabaseFileSystem extends FileSystem {
 
       if (!response.ok && response.status !== 206) {
         stream.emit(
-          "error",
+          'error',
           new Error(
             `Failed to download file: ${response.status} ${response.statusText}`
           )
@@ -295,7 +295,7 @@ export default class SupabaseFileSystem extends FileSystem {
       }
 
       if (!response.body) {
-        stream.emit("error", new Error("Response body is null"));
+        stream.emit('error', new Error('Response body is null'));
         return;
       }
 
@@ -303,13 +303,13 @@ export default class SupabaseFileSystem extends FileSystem {
 
       nodeStream.pipe(stream);
 
-      nodeStream.on("error", (error) => {
-        console.error("Stream error:", error);
-        stream.emit("error", error);
+      nodeStream.on('error', error => {
+        console.error('Stream error:', error);
+        stream.emit('error', error);
       });
     } catch (error) {
-      console.error("Error downloading file:", error);
-      stream.emit("error", error);
+      console.error('Error downloading file:', error);
+      stream.emit('error', error);
     }
   }
 
@@ -320,8 +320,8 @@ export default class SupabaseFileSystem extends FileSystem {
       read() {},
     });
 
-    this._downloadFile(fsPath, stream, options?.start).catch((error) => {
-      stream.emit("error", error);
+    this._downloadFile(fsPath, stream, options?.start).catch(error => {
+      stream.emit('error', error);
     });
 
     return {
@@ -343,7 +343,7 @@ export default class SupabaseFileSystem extends FileSystem {
       retryDelays: [0, 3000, 5000, 10000, 20000],
       headers: {
         authorization: `Bearer ${process.env.SUPABASE_KEY}`,
-        "x-upsert": options?.append ? "true" : "false",
+        'x-upsert': options?.append ? 'true' : 'false',
       },
       uploadDataDuringCreation: true,
       uploadLengthDeferred: true,
@@ -351,12 +351,12 @@ export default class SupabaseFileSystem extends FileSystem {
       metadata: {
         bucketName: this.bucketName,
         objectName: fsPath,
-        contentType: "application/octet-stream",
+        contentType: 'application/octet-stream',
       },
       chunkSize: 6 * 1024 * 1024, // 6MB chunks
-      onError: (error) => {
-        console.error("Upload error:", error);
-        pass.emit("error", error);
+      onError: error => {
+        console.error('Upload error:', error);
+        pass.emit('error', error);
       },
       onSuccess: () => {
         console.log(`File ${fileName} uploaded successfully`);
@@ -381,7 +381,7 @@ export default class SupabaseFileSystem extends FileSystem {
     try {
       const { fsPath } = this._resolvePath(path);
 
-      return this.get(path).then(async (stats) => {
+      return this.get(path).then(async stats => {
         if (stats.isFile()) {
           const { error } = await this.connection.server.supabase.storage
             .from(this.bucketName)
@@ -396,7 +396,7 @@ export default class SupabaseFileSystem extends FileSystem {
             .list(fsPath, {
               limit: 1000,
               offset: 0,
-              sortBy: { column: "name", order: "asc" },
+              sortBy: { column: 'name', order: 'asc' },
             });
 
           if (error) {
@@ -407,8 +407,8 @@ export default class SupabaseFileSystem extends FileSystem {
 
           if (data && data.length > 0) {
             const filesToDelete = data
-              .filter((item) => item.metadata)
-              .map((file) => `${fsPath}/${file.name}`);
+              .filter(item => item.metadata)
+              .map(file => `${fsPath}/${file.name}`);
 
             if (filesToDelete.length > 0) {
               const { error: deleteError } =
@@ -423,7 +423,7 @@ export default class SupabaseFileSystem extends FileSystem {
               }
             }
 
-            for (const item of data.filter((item) => !item.metadata)) {
+            for (const item of data.filter(item => !item.metadata)) {
               await this.delete(`${path}/${item.name}`);
             }
           }
@@ -432,7 +432,7 @@ export default class SupabaseFileSystem extends FileSystem {
         return Promise.resolve();
       });
     } catch (error) {
-      console.error("Error deleting:", error);
+      console.error('Error deleting:', error);
       return Promise.reject(error);
     }
   }
@@ -448,7 +448,7 @@ export default class SupabaseFileSystem extends FileSystem {
       const { error } = await this.connection.server.supabase.storage
         .from(this.bucketName)
         .upload(placeholderPath, emptyBuffer, {
-          contentType: "application/octet-stream",
+          contentType: 'application/octet-stream',
           upsert: true,
         });
 
@@ -458,19 +458,19 @@ export default class SupabaseFileSystem extends FileSystem {
 
       return clientPath;
     } catch (error) {
-      console.error("Error creating directory:", error);
+      console.error('Error creating directory:', error);
       throw new Error(
-        `Failed to create directory: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to create directory: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
   rename(from: string, to: string): void {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
   chmod(path: string, mode: number): void {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
   getUniqueName(): string {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 }
