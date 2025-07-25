@@ -8,7 +8,7 @@ const FAMILY: Record<string, number> = {
 
 const eprt: CommandRegistry = {
   directive: 'EPRT',
-  handler: function ({ command }) {
+  handler: async function ({ command }) {
     const arg = command?.arg || '';
 
     if (!arg.startsWith('|') || !arg.endsWith('|')) {
