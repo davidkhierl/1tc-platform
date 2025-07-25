@@ -48,12 +48,13 @@ export class Connection extends EventEmitter {
   commands = new Commands(this);
   transferType = 'binary';
   encoding: BufferEncoding = 'utf8';
-  bufferSize = false;
+  bufferSize: number = 0;
   authenticated = false;
   username: string | null = null;
   private _restByteCount = 0;
   private _secure = false;
   fs: FileSystem | null = null;
+  renameFrom: string | null = null;
 
   constructor(server: FtpServer, socket: net.Socket) {
     super();
