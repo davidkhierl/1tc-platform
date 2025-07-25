@@ -23,7 +23,8 @@
     "dev": "tsc --watch",
     {{/if}}
     "check-types": "tsc --noEmit"{{#if hasTests}},
-    "test": "vitest run"{{/if}}
+    "test": "vitest run",
+    "test:watch": "vitest --watch"{{/if}}
   },
   {{#if (eq type "app")}}
   "dependencies": {
