@@ -5,7 +5,7 @@ const abor: CommandRegistry = {
   handler: async function () {
     return this.connector
       .waitForConnection()
-      .then(socket => {
+      .then(async socket => {
         return this.reply(426, { socket }).then(() => this.reply(226));
       })
       .catch(() => this.reply(225))
