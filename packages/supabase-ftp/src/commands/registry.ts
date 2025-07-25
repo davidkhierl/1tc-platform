@@ -23,6 +23,20 @@ import auth from './registration/auth.js';
 import eprt from './registration/eprt.js';
 import port from './registration/port.js';
 import epsv from './registration/epsv.js';
+import appe from './registration/appe.js';
+import cdup from './registration/cdup.js';
+import mode from './registration/mode.js';
+import noop from './registration/noop.js';
+import pass from './registration/pass.js';
+import pbsz from './registration/pbsz.js';
+import prot from './registration/prot.js';
+import quit from './registration/quit.js';
+import rnfr from './registration/rnfr.js';
+import rnto from './registration/rnto.js';
+import size from './registration/size.js';
+import stat from './registration/stat.js';
+import stou from './registration/stou.js';
+import stru from './registration/stru.js';
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -46,7 +60,9 @@ export interface CommandRegistry<T = any> {
 const commands: CommandRegistry[] = [
   abor,
   allo,
+  appe,
   auth,
+  cdup,
   cwd,
   dele,
   eprt,
@@ -55,15 +71,27 @@ const commands: CommandRegistry[] = [
   help,
   list,
   mkd,
+  mode,
   nlst,
+  noop,
   opts,
+  pass,
   pasv,
+  pbsz,
   port,
+  prot,
   pwd,
+  quit,
   rest,
   retr,
   rmd,
+  rnfr,
+  rnto,
+  size,
+  stat,
   stor,
+  stou,
+  stru,
   syst,
   tType,
   user,
