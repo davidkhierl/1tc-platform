@@ -1,8 +1,9 @@
 {
   "extends": ["@1tc/typescript-config/base.json"],
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "rootDir": "src"
   },
-  "include": ["configs", "scripts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
 }

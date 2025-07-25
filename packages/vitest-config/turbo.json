@@ -1,6 +1,10 @@
 {
   "extends": ["//"],
   "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
     "collect-json-reports": {
       "cache": false
     },
@@ -11,7 +15,7 @@
     },
     "report": {
       "dependsOn": ["merge-json-reports"],
-      "inputs": ["coverage/merge"],
+      "inputs": ["coverage/merged/**"],
       "outputs": ["coverage/report/**"]
     },
     "view-report": {
