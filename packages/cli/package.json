@@ -1,0 +1,29 @@
+{
+  "name": "@1tc/cli",
+  "version": "1.0.0",
+  "description": "Utility cli for 1tc-platform",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
+  },
+  "devDependencies": {
+    "@1tc/eslint-config": "workspace:*",
+    "@1tc/typescript-config": "workspace:*",
+    "@1tc/vitest-config": "workspace:*",
+    "@vitest/coverage-istanbul": "^3.2.4",
+    "vitest": "^3.2.4",
+    "@types/node": "^24.1.0",
+    "typescript": "5.8.3"
+  }
+}
