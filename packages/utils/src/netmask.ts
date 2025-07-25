@@ -1,8 +1,8 @@
 /**
  * Modern TypeScript implementation of IPv4 network mask utilities
+ * Complies with RFC 791 (Internet Protocol), RFC 950 (Subnetting),
+ * RFC 4632 (CIDR), and RFC 3986 (URI Generic Syntax) standards
  */
-
-type ParseResult = [number, number];
 
 /**
  * Converts a 32-bit integer to IPv4 dotted decimal notation
@@ -16,148 +16,116 @@ export function long2ip(long: number): string {
 }
 
 /**
- * Converts IPv4 dotted decimal notation to a 32-bit integer
+ * RFC-compliant IPv4 address to 32-bit integer conversion
+ *
+ * Implements strict dotted decimal notation parsing per:
+ * - RFC 791 (Internet Protocol)
+ * - RFC 3986 Section 7.4 (security considerations for rare IP formats)
+ *
+ * Security: Rejects octal and hexadecimal formats that could lead to
+ * address spoofing vulnerabilities in web applications.
+ *
+ * @param ip - IPv4 address in dotted decimal notation (e.g., "192.168.1.1")
+ * @returns 32-bit integer representation
+ * @throws Error for invalid or non-standard formats
  */
-export function ip2long(ip: string): number {
+function ip2long(ip: string): number {
+  // Strict validation: only accept dotted decimal notation
+  if (typeof ip !== 'string' || ip.length === 0) {
+    throw new Error('Invalid IP: must be a non-empty string');
+  }
+
+  // Check for valid IPv4 format using strict regex
+  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  const match = ip.match(ipv4Regex);
+
+  if (!match) {
+    throw new Error(
+      `Invalid IP format: ${ip}. Must be dotted decimal notation (e.g., 192.168.1.1)`
+    );
+  }
+
   const octets: number[] = [];
-  let remaining = ip;
 
-  for (let i = 0; i <= 3; i++) {
-    if (remaining.length === 0) {
-      break;
+  // Parse each octet with strict decimal validation
+  for (let i = 1; i <= 4; i++) {
+    const octetStr = match[i];
+    if (!octetStr) {
+      throw new Error('Invalid IP: missing octet');
     }
 
-    if (i > 0) {
-      const firstChar = remaining.charAt(0);
-      if (firstChar !== '.') {
-        throw new Error('Invalid IP');
-      }
-      remaining = remaining.substring(1);
+    // Reject leading zeros (except for "0" itself) to prevent octal interpretation
+    if (octetStr.length > 1 && octetStr.charAt(0) === '0') {
+      throw new Error(
+        `Invalid IP: octet "${octetStr}" has leading zeros. Use standard decimal notation.`
+      );
     }
 
-    const [value, consumed] = parseOctet(remaining);
-    remaining = remaining.substring(consumed);
+    const value = parseInt(octetStr, 10);
+
+    // Validate octet range (0-255)
+    if (value < 0 || value > 255) {
+      throw new Error(
+        `Invalid IP: octet "${octetStr}" must be between 0 and 255`
+      );
+    }
+
     octets.push(value);
   }
 
-  if (remaining.length !== 0) {
-    throw new Error('Invalid IP');
+  // Convert to 32-bit integer - octets array is guaranteed to have 4 elements
+  const [a, b, c, d] = octets;
+  if (
+    a === undefined ||
+    b === undefined ||
+    c === undefined ||
+    d === undefined
+  ) {
+    throw new Error('Invalid IP: missing octets');
   }
-
-  switch (octets.length) {
-    case 1: {
-      const octet0 = octets[0];
-      if (octet0 === undefined || octet0 > 0xffffffff) {
-        throw new Error('Invalid IP');
-      }
-      return octet0 >>> 0;
-    }
-
-    case 2: {
-      const [octet0, octet1] = octets;
-      if (
-        octet0 === undefined ||
-        octet1 === undefined ||
-        octet0 > 0xff ||
-        octet1 > 0xffffff
-      ) {
-        throw new Error('Invalid IP');
-      }
-      return ((octet0 << 24) | octet1) >>> 0;
-    }
-
-    case 3: {
-      const [octet0, octet1, octet2] = octets;
-      if (
-        octet0 === undefined ||
-        octet1 === undefined ||
-        octet2 === undefined ||
-        octet0 > 0xff ||
-        octet1 > 0xff ||
-        octet2 > 0xffff
-      ) {
-        throw new Error('Invalid IP');
-      }
-      return ((octet0 << 24) | (octet1 << 16) | octet2) >>> 0;
-    }
-
-    case 4: {
-      const [octet0, octet1, octet2, octet3] = octets;
-      if (
-        octet0 === undefined ||
-        octet1 === undefined ||
-        octet2 === undefined ||
-        octet3 === undefined ||
-        octets.some(octet => octet > 0xff)
-      ) {
-        throw new Error('Invalid IP');
-      }
-      return ((octet0 << 24) | (octet1 << 16) | (octet2 << 8) | octet3) >>> 0;
-    }
-
-    default:
-      throw new Error('Invalid IP');
-  }
+  return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0;
 }
 
 /**
- * Parses a numeric string in decimal, octal, or hexadecimal format
+ * Validates that a subnet mask is contiguous (RFC 950 standard)
  */
-function parseOctet(s: string): ParseResult {
-  let value = 0;
-  let base = 10;
-  let maxDigit = '9';
-  let index = 0;
+/**
+ * Validates that a subnet mask has contiguous 1 bits followed by contiguous 0 bits
+ * per RFC 950 requirements
+ */
+function isValidSubnetMask(mask: number): boolean {
+  // Special case: /0 means no mask bits, which is valid
+  if (mask === 0) return true;
 
-  if (s.length > 1 && s.charAt(index) === '0') {
-    const nextChar = s.charAt(index + 1);
-    if (nextChar === 'x' || nextChar === 'X') {
-      index += 2;
-      base = 16;
-    } else if (nextChar >= '0' && nextChar <= '9') {
-      index++;
-      base = 8;
-      maxDigit = '7';
-    }
-  }
+  // Special case: /32 means all mask bits, which is valid
+  if (mask === 0xffffffff) return true;
 
-  const start = index;
-
-  while (index < s.length) {
-    const char = s.charAt(index);
-
-    if (char >= '0' && char <= maxDigit) {
-      value = (value * base + (char.charCodeAt(0) - '0'.charCodeAt(0))) >>> 0;
-    } else if (base === 16) {
-      if (char >= 'a' && char <= 'f') {
-        value =
-          (value * base + (10 + char.charCodeAt(0) - 'a'.charCodeAt(0))) >>> 0;
-      } else if (char >= 'A' && char <= 'F') {
-        value =
-          (value * base + (10 + char.charCodeAt(0) - 'A'.charCodeAt(0))) >>> 0;
-      } else {
-        break;
-      }
-    } else {
-      break;
-    }
-
-    if (value > 0xffffffff) {
-      throw new Error('Number too large');
-    }
-
-    index++;
-  }
-
-  if (index === start) {
-    throw new Error('Empty octet');
-  }
-
-  return [value, index];
+  // Convert to binary and check for contiguous 1s followed by contiguous 0s
+  const binary = (mask >>> 0).toString(2).padStart(32, '0');
+  return /^1*0*$/.test(binary);
 }
 
 /**
- * Represents an IPv4 network with CIDR notation support
+ * RFC-compliant IPv4 network mask utilities with CIDR notation support
+ *
+ * Implements strict compliance with:
+ * - RFC 791: Internet Protocol (basic IPv4 specification)
+ * - RFC 950: Internet Standard Subnetting Procedure
+ * - RFC 4632: CIDR Address Strategy and Address Aggregation
+ * - RFC 3986: Security considerations (rejects non-standard IP formats)
+ *
+ * Security Features:
+ * - Rejects octal/hexadecimal IPv4 formats to prevent address spoofing
+ * - Validates subnet masks for contiguous bit patterns
+ * - Strict input validation with descriptive error messages
+ *
+ * @example
+ * ```typescript
+ * const net = new Netmask('192.168.1.0/24');
+ * console.log(net.contains('192.168.1.100')); // true
+ * console.log(net.first); // '192.168.1.1'
+ * console.log(net.broadcast); // '192.168.1.255'
+ * ```
  */
 export class Netmask {
   public readonly bitmask: number;
@@ -194,20 +162,36 @@ export class Netmask {
       networkMask = 32;
     }
 
-    // Parse mask
+    // Parse mask with improved validation
     if (typeof networkMask === 'string' && networkMask.includes('.')) {
-      // Dotted decimal mask
+      // Dotted decimal mask - validate RFC compliance
       try {
         this.maskLong = ip2long(networkMask);
-      } catch (error) {
-        throw new Error(`Invalid mask: ${networkMask}`);
-      }
 
-      // Convert to CIDR notation
-      this.bitmask = this.maskLongToBitmask(this.maskLong);
+        // Validate that it's a proper subnet mask (contiguous bits)
+        if (!isValidSubnetMask(this.maskLong)) {
+          throw new Error(
+            `Invalid subnet mask: ${networkMask}. Subnet mask must have contiguous 1 bits followed by contiguous 0 bits`
+          );
+        }
+
+        this.bitmask = this.maskLongToBitmask(this.maskLong);
+      } catch (error) {
+        throw new Error(
+          `Invalid mask: ${networkMask}. ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
     } else {
       // CIDR notation
       this.bitmask = parseInt(String(networkMask), 10);
+
+      // Validate CIDR range
+      if (this.bitmask < 0 || this.bitmask > 32) {
+        throw new Error(
+          `Invalid CIDR notation: /${this.bitmask}. Must be between 0 and 32`
+        );
+      }
+
       if (this.bitmask > 0) {
         this.maskLong = (0xffffffff << (32 - this.bitmask)) >>> 0;
       } else {
@@ -215,16 +199,14 @@ export class Netmask {
       }
     }
 
-    // Validate bitmask
-    if (this.bitmask > 32) {
-      throw new Error(`Invalid mask for IPv4: ${networkMask}`);
-    }
-
     // Parse network address
     try {
-      this.netLong = (ip2long(networkAddress) & this.maskLong) >>> 0;
+      const addressLong = ip2long(networkAddress);
+      this.netLong = (addressLong & this.maskLong) >>> 0;
     } catch (error) {
-      throw new Error(`Invalid net address: ${networkAddress}`);
+      throw new Error(
+        `Invalid net address: ${networkAddress}. ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     // Calculate network properties
@@ -258,6 +240,7 @@ export class Netmask {
 
   /**
    * Checks if an IP address or network is contained within this network
+   * Uses strict RFC-compliant IPv4 address validation
    */
   contains(ip: string | Netmask): boolean {
     if (
@@ -271,10 +254,17 @@ export class Netmask {
       return this.contains(ip.base) && this.contains(ip.broadcast || ip.last);
     }
 
-    return (
-      (ip2long(ip) & this.maskLong) >>> 0 ===
-      (this.netLong & this.maskLong) >>> 0
-    );
+    try {
+      const ipLong = ip2long(ip);
+      return (
+        (ipLong & this.maskLong) >>> 0 === (this.netLong & this.maskLong) >>> 0
+      );
+    } catch (error) {
+      // Invalid IP format
+      throw new Error(
+        `Invalid IP address: ${ip}. ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 
   /**
