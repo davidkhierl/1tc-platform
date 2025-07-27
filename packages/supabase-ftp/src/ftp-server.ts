@@ -178,7 +178,7 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
   }
 
   async listen(cb?: (host: FtpServerHost) => void) {
-    if (!this.options.wanIp) {
+    if (!this.options.wanIp && !this.options.passiveHostname) {
       console.warn('WAN IP not set, attempting to determine it automatically.');
       try {
         this.options.wanIp = await findWanIp(this.options.wanIpCheckUrl);
