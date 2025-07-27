@@ -5,6 +5,7 @@ import { FileStats } from '../fs/fs.js';
 const FORMATS = {
   ls,
   ep,
+  mlsd,
 };
 
 export default function getFileStat(
@@ -63,4 +64,57 @@ function ep(fileStat: FileStats): string {
     .filter(Boolean)
     .join(',');
   return `+${facts}\t${fileStat.name}`;
+}
+
+function mlsd(fileStat: FileStats): string {
+  const mtime = new Date(fileStat.mtime);
+
+  const facts: string[] = [];
+
+  if (fileStat.isDirectory()) {
+    facts.push('Type=dir');
+  } else {
+    facts.push('Type=file');
+  }
+
+  if (fileStat.isFile()) {
+    facts.push(`Size=${fileStat.size || 0}`);
+  }
+
+  const modifyTime = mtime
+    .toISOString()
+    .replace(/[-:T]/g, '')
+    .replace(/\.\d{3}Z$/, '');
+  facts.push(`Modify=${modifyTime}`);
+
+  let perm = '';
+  if (fileStat.isDirectory()) {
+    // Directory permissions
+    perm += 'e'; // enter (cd into directory)
+    perm += 'l'; // list (read directory contents)
+    if (fileStat.mode && fileStat.mode & 0o200) {
+      perm += 'c'; // create files in directory
+      perm += 'm'; // make subdirectories
+      perm += 'd'; // delete files in directory
+      perm += 'f'; // rename files in directory
+    }
+  } else {
+    // File permissions
+    if (fileStat.mode && fileStat.mode & 0o400) {
+      perm += 'r'; // read file
+    }
+    if (fileStat.mode && fileStat.mode & 0o200) {
+      perm += 'w'; // write file
+      perm += 'd'; // delete file
+      perm += 'f'; // rename file
+    }
+  }
+  facts.push(`Perm=${perm}`);
+
+  if (fileStat.mode) {
+    facts.push(`UNIX.mode=0${(fileStat.mode & 0o777).toString(8)}`);
+  }
+
+  const factsString = facts.join(';');
+  return `${factsString} ${fileStat.name}`;
 }
