@@ -38,6 +38,7 @@ import stat from './registration/stat.js';
 import stou from './registration/stou.js';
 import stru from './registration/stru.js';
 import site from './registration/site/site.js';
+import mdtm from './registration/mdtm.js';
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -73,6 +74,7 @@ const commands: CommandRegistry[] = [
   feat,
   help,
   list,
+  mdtm,
   mkd,
   mode,
   nlst,
