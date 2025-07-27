@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 const ftpServer = createFtpServer(supabase, {
-  url: 'ftp://127.0.0.1:2121',
+  url: 'ftp://0.0.0.0:2121',
   anonymous: true,
   passiveHostname: passiveHostname,
 });
