@@ -11,7 +11,10 @@ const pwd: CommandRegistry = {
     return Promise.resolve()
       .then(() => fs.currentDirectory())
       .then(cwd => {
-        const path = cwd ? `"${cwd.replace(/"/g, '""')}"` : '';
+        if (!cwd || cwd.trim() === '') {
+          throw new Error('Current directory is not set or invalid');
+        }
+        const path = `"${cwd.replace(/"/g, '""')}"`;
         return this.reply(257, `${path} is your current location`);
       })
       .catch(err => {
