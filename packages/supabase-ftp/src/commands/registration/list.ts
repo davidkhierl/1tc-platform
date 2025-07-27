@@ -56,7 +56,8 @@ export const list: CommandRegistry = {
         const message = files
           .map(file => {
             if (simple) return file.name;
-            const fileFormat = this?.server?.options?.listFormat ?? 'ls';
+            const fileFormat =
+              this.listFormat || this.server.options.listFormat || 'ls';
             return getFileStat(file, fileFormat);
           })
           .join('\r\n');
