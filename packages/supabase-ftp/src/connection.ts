@@ -55,6 +55,7 @@ export class Connection extends EventEmitter {
   private _secure = false;
   fs: FileSystem | null = null;
   renameFrom: string | null = null;
+  listFormat: 'ls' | 'ep' = 'ls';
 
   constructor(server: FtpServer, socket: net.Socket) {
     super();
