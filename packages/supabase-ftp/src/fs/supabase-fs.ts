@@ -464,13 +464,124 @@ export default class SupabaseFileSystem extends FileSystem {
       );
     }
   }
-  rename(from: string, to: string): void {
-    throw new Error('Method not implemented.');
+
+  async rename(from: string, to: string): Promise<void> {
+    try {
+      const { fsPath: fromFsPath } = this._resolvePath(from);
+      const { fsPath: toFsPath } = this._resolvePath(to);
+
+      const stats = await this.get(from);
+
+      if (stats.isFile()) {
+        const { error } = await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .move(fromFsPath, toFsPath);
+
+        if (error) {
+          throw new Error(`Failed to move file: ${error.message}`);
+        }
+      } else if (stats.isDirectory()) {
+        await this._moveDirectory(fromFsPath, toFsPath);
+      } else {
+        throw new Error(`Unknown file type for ${from}`);
+      }
+    } catch (error) {
+      console.error('Error renaming:', error);
+      throw new Error(
+        `Failed to rename ${from} to ${to}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
+
+  private async _moveDirectory(
+    fromPath: string,
+    toPath: string
+  ): Promise<void> {
+    try {
+      const placeholderPath = `${toPath}/.emptyFolderPlaceholder`;
+      const emptyBuffer = new Uint8Array(0);
+
+      const { error: createError } =
+        await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .upload(placeholderPath, emptyBuffer, {
+            contentType: 'application/octet-stream',
+            upsert: true,
+          });
+
+      if (createError) {
+        throw new Error(
+          `Failed to create destination directory: ${createError.message}`
+        );
+      }
+
+      const { data: files, error: listError } =
+        await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .list(fromPath, {
+            limit: 1000,
+            offset: 0,
+            sortBy: { column: 'name', order: 'asc' },
+          });
+
+      if (listError) {
+        throw new Error(
+          `Failed to list source directory: ${listError.message}`
+        );
+      }
+
+      if (!files || files.length === 0) return;
+
+      for (const file of files) {
+        const sourceItemPath = `${fromPath}/${file.name}`;
+        const destItemPath = `${toPath}/${file.name}`;
+
+        if (file.metadata) {
+          const { error: moveError } =
+            await this.connection.server.supabase.storage
+              .from(this.bucketName)
+              .move(sourceItemPath, destItemPath);
+
+          if (moveError) {
+            throw new Error(
+              `Failed to move file ${file.name}: ${moveError.message}`
+            );
+          }
+        } else {
+          await this._moveDirectory(sourceItemPath, destItemPath);
+        }
+      }
+
+      const { error: removeError } =
+        await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .remove([`${fromPath}/.emptyFolderPlaceholder`]);
+
+      if (removeError && !removeError.message.includes('does not exist')) {
+        console.warn(
+          `Warning: Could not remove source directory placeholder: ${removeError.message}`
+        );
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to move directory from ${fromPath} to ${toPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
   chmod(path: string, mode: number): void {
     throw new Error('Method not implemented.');
   }
-  getUniqueName(): string {
-    throw new Error('Method not implemented.');
+
+  getUniqueName(name: string): string {
+    const extension = name.includes('.')
+      ? name.substring(name.lastIndexOf('.'))
+      : '';
+    const baseName = name.includes('.')
+      ? name.substring(0, name.lastIndexOf('.'))
+      : name;
+    const randomPart = Math.random().toString(36).substring(2, 15);
+    const timestampPart = Date.now().toString(36);
+    return `${baseName}_${timestampPart}_${randomPart}${extension}`;
   }
 }
