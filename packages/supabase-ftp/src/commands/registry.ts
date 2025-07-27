@@ -44,6 +44,11 @@ export interface CommandFlags {
   obsolete?: boolean;
 }
 
+export type CommandRegistryHandler<T = any> = (
+  this: Connection,
+  args: { command: ParsedCommand; previousCommand?: ParsedCommand }
+) => Promise<T> | T;
+
 export interface CommandRegistry<T = any> {
   directive: string | string[];
   arg?: string | null;
@@ -51,10 +56,7 @@ export interface CommandRegistry<T = any> {
   raw?: string;
   syntax: string;
   description: string;
-  handler?: (
-    this: Connection,
-    args: { command: ParsedCommand; previousCommand?: ParsedCommand }
-  ) => Promise<T> | T;
+  handler?: CommandRegistryHandler<T>;
 }
 
 const commands: CommandRegistry[] = [
