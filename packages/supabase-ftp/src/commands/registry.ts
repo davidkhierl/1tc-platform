@@ -39,6 +39,8 @@ import stou from './registration/stou.js';
 import stru from './registration/stru.js';
 import site from './registration/site/site.js';
 import mdtm from './registration/mdtm.js';
+import mlsd from './registration/mlsd.js';
+import mlst from './registration/mlst.js';
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -76,6 +78,8 @@ const commands: CommandRegistry[] = [
   list,
   mdtm,
   mkd,
+  mlsd,
+  mlst,
   mode,
   nlst,
   noop,
