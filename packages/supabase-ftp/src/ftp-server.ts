@@ -175,7 +175,7 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
     return this.url.protocol === 'ftps:' && !!this.options.tls;
   }
 
-  listen(cb?: (host: FtpServerHost) => void) {
+  async listen(cb?: (host: FtpServerHost) => void) {
     if (!this.options.passiveHostname)
       console.warn(
         'Passive host is not set. Passive connections not available.'
