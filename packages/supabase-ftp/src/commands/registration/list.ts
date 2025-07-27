@@ -1,3 +1,4 @@
+import { ConnectorError, TimeoutError } from '../../errors.js';
 import getFileStat from '../../helpers/file-stat.js';
 import { CommandRegistry } from '../registry.js';
 
@@ -7,10 +8,14 @@ export const list: CommandRegistry = {
     const fs = this.fs;
 
     if (!fs) return this.reply(550, 'File system not instantiated');
-    if (!fs.get) return this.reply(402, 'Not supported by file system');
-    if (!fs.list) return this.reply(402, 'Not supported by file system');
+    if (!fs.get) return this.reply(502, 'Not supported by file system');
+    if (!fs.list) return this.reply(502, 'LIST not supported by file system');
 
-    const simple = command.directive === 'NLST';
+    if (!this.connector)
+      return this.reply(
+        425,
+        'Use PASV or PORT to establish data connection first'
+      );
 
     let path = '.';
     let showHidden = false;
@@ -20,12 +25,13 @@ export const list: CommandRegistry = {
       const options = args.filter(arg => arg.startsWith('-'));
       showHidden = options.some(arg => {
         const flags = arg.slice(1);
-        return /^[la]*a[la]*$/.test(flags); // Only match combinations of 'l' and 'a' where 'a' is present
+        return /^[la]*a[la]*$/.test(flags);
       });
 
       const nonOption = args.find(arg => !arg.startsWith('-'));
       if (nonOption) path = nonOption;
     }
+
     return this.connector
       .waitForConnection()
       .then(() => {
@@ -35,43 +41,47 @@ export const list: CommandRegistry = {
       .then(stat =>
         stat.isDirectory() ? fs.list(path, { showHidden }) : [stat]
       )
-      .then(files => {
+      .then(async files => {
         this.reply(
           150,
           `Accepted data connection, returning ${files.length} file(s)`
         );
 
-        if (!this.connector.socket) {
-          console.error('No data connection established');
-          return this.reply(425, 'No data connection established');
-        }
+        const socket = this.connector.socket ?? undefined;
+
         if (!files) {
           return this.reply({
             raw: true,
-            socket: this.connector.socket,
+            socket,
             useEmptyMessage: true,
           });
         }
 
-        const message = files
-          .map(file => {
-            if (simple) return file.name;
+        return Promise.try(() =>
+          files.map(file => {
             const fileFormat =
               this.listFormat || this.server.options.listFormat || 'ls';
             return getFileStat(file, fileFormat);
           })
-          .join('\r\n');
-
-        return this.reply(
-          { raw: true, socket: this.connector.socket },
-          message
-        );
+        ).then(formattedFiles => {
+          return this.reply(
+            {},
+            { raw: true, socket, message: formattedFiles.join('\r\n') }
+          );
+        });
       })
-      .then(() => this.reply(226))
+      .then(() => this.reply(226, 'LIST complete'))
       .catch(err => {
-        if (err && err.name === 'TimeoutError') {
+        if (err instanceof TimeoutError) {
           console.error(err);
           return this.reply(425, 'No connection established');
+        }
+        if (err instanceof ConnectorError) {
+          console.error(err);
+          return this.reply(
+            425,
+            'Use PASV or PORT to establish data connection first'
+          );
         }
         console.error(err);
         return this.reply(451, err.message || 'No directory');
