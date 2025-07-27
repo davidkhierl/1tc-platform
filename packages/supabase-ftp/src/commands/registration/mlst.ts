@@ -16,7 +16,7 @@ const mlst: CommandRegistry = {
 
     return Promise.resolve(fs.get(path))
       .then(async stat => {
-        const message = getFileStat(stat, 'mlsd'); // Use mlsd format for MLST too
+        const message = getFileStat(stat, 'mlsd');
         return this.reply(
           250,
           'MLST begin',
