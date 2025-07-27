@@ -148,7 +148,7 @@ export default class SupabaseFileSystem extends FileSystem {
     }
   }
 
-  async list(path = '.'): Promise<FileStats[]> {
+  async list(path = '.', { showHidden = false }): Promise<FileStats[]> {
     try {
       const { fsPath } = this._resolvePath(path);
 
@@ -168,22 +168,26 @@ export default class SupabaseFileSystem extends FileSystem {
         return [];
       }
 
-      return data.map((item): FileStats => {
-        const isDirectory = !item.metadata;
-        const size = item.metadata?.size || 0;
-        const lastModified = new Date(
-          item.updated_at || item.created_at || Date.now()
-        );
+      const items = data
+        .filter(item => showHidden || !item.name.startsWith('.'))
+        .map((item): FileStats => {
+          const isDirectory = !item.metadata;
+          const size = item.metadata?.size || 0;
+          const lastModified = new Date(
+            item.updated_at || item.created_at || Date.now()
+          );
 
-        return {
-          name: item.name,
-          size: size,
-          mtime: lastModified,
-          mode: isDirectory ? 0o755 : 0o644, // Directory: 755, File: 644
-          isDirectory: () => isDirectory,
-          isFile: () => !isDirectory,
-        };
-      });
+          return {
+            name: item.name,
+            size: size,
+            mtime: lastModified,
+            mode: isDirectory ? 0o755 : 0o644, // Directory: 755, File: 644
+            isDirectory: () => isDirectory,
+            isFile: () => !isDirectory,
+          };
+        });
+
+      return items;
     } catch (error) {
       console.error('Error listing directory:', error);
       return [];
@@ -441,7 +445,7 @@ export default class SupabaseFileSystem extends FileSystem {
     try {
       const { clientPath, fsPath } = this._resolvePath(path);
 
-      const placeholderPath = `${fsPath}/.emptyFolderPlaceholder`;
+      const placeholderPath = `${fsPath}/.keep`;
 
       const emptyBuffer = new Uint8Array(0);
 
@@ -498,7 +502,7 @@ export default class SupabaseFileSystem extends FileSystem {
     toPath: string
   ): Promise<void> {
     try {
-      const placeholderPath = `${toPath}/.emptyFolderPlaceholder`;
+      const placeholderPath = `${toPath}/.keep`;
       const emptyBuffer = new Uint8Array(0);
 
       const { error: createError } =
@@ -555,7 +559,7 @@ export default class SupabaseFileSystem extends FileSystem {
       const { error: removeError } =
         await this.connection.server.supabase.storage
           .from(this.bucketName)
-          .remove([`${fromPath}/.emptyFolderPlaceholder`]);
+          .remove([`${fromPath}/.keep`]);
 
       if (removeError && !removeError.message.includes('does not exist')) {
         console.warn(

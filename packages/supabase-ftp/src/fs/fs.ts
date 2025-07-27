@@ -44,7 +44,10 @@ abstract class FileSystem {
     fsPath: string;
   };
   abstract chdir(path?: string | null): Promisable<string>;
-  abstract list(path?: string): Promisable<FileStats[]>;
+  abstract list(
+    path?: string,
+    options?: { showHidden?: boolean }
+  ): Promisable<FileStats[]>;
   abstract get(fileName: string): Promisable<FileStats>;
   abstract write(
     fileName: string,

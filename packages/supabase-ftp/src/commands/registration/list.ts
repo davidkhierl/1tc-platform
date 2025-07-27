@@ -13,8 +13,13 @@ export const list: CommandRegistry = {
     const simple = command.directive === 'NLST';
 
     let path = '.';
+    let showHidden = false;
     if (command.arg) {
       const args = command.arg.split(/\s+/).filter(Boolean);
+
+      const options = args.filter(arg => arg.startsWith('-'));
+      showHidden = options.some(arg => arg.includes('a')); // -a or -al
+
       const nonOption = args.find(arg => !arg.startsWith('-'));
       if (nonOption) path = nonOption;
     }
@@ -24,7 +29,9 @@ export const list: CommandRegistry = {
         this.commandSocket.pause();
       })
       .then(() => fs.get(path))
-      .then(stat => (stat.isDirectory() ? fs.list(path) : [stat]))
+      .then(stat =>
+        stat.isDirectory() ? fs.list(path, { showHidden }) : [stat]
+      )
       .then(files => {
         this.reply(
           150,
