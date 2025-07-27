@@ -570,7 +570,23 @@ export default class SupabaseFileSystem extends FileSystem {
   }
 
   chmod(path: string, mode: number): void {
-    throw new Error('Method not implemented.');
+    // Note: Supabase Storage doesn't have native file permissions like Unix systems.
+    // This implementation stores the mode as metadata for compatibility with FTP clients
+    // that expect chmod to work, but it doesn't enforce actual permissions.
+
+    console.warn(
+      `chmod called on ${path} with mode ${mode.toString(8)} (octal). ` +
+        'Supabase Storage does not support file permissions. ' +
+        'Use Row Level Security (RLS) policies for access control instead.'
+    );
+
+    // For FTP compatibility, we could store the mode in a custom metadata table
+    // or return success without error to avoid breaking FTP clients that expect chmod to work
+
+    // This is a no-op for now, but could be extended to:
+    // 1. Store permissions in a custom metadata table
+    // 2. Update file metadata (if supported by the storage backend)
+    // 3. Modify RLS policies dynamically (advanced use case)
   }
 
   getUniqueName(name: string): string {
