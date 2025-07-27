@@ -37,6 +37,7 @@ import size from './registration/size.js';
 import stat from './registration/stat.js';
 import stou from './registration/stou.js';
 import stru from './registration/stru.js';
+import site from './registration/site/site.js';
 
 export interface CommandFlags {
   no_auth?: boolean;
@@ -89,6 +90,7 @@ const commands: CommandRegistry[] = [
   rmd,
   rnfr,
   rnto,
+  site,
   size,
   stat,
   stor,
