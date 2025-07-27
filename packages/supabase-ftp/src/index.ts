@@ -26,7 +26,7 @@ export function createFtpServer(
     url: 'ftp://127.0.1:21',
     passivePortRange: [PASV_MIN, PASV_MAX],
     passiveHostname: null,
-    anonymous: false,
+    anonymous: true,
     listFormat: 'ls',
     blacklist: [],
     whitelist: [],
