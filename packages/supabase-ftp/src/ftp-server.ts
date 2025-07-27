@@ -20,6 +20,8 @@ export interface FtpServerOptions {
   tls?: tls.TlsOptions;
   timeout: number;
   endOnProcessSignal: boolean;
+  wanIp?: string | null;
+  wanIpCheckUrl?: string;
 }
 
 export interface FtpServerHost {
@@ -176,30 +178,34 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
   }
 
   async listen(cb?: (host: FtpServerHost) => void) {
-    if (!this.options.passiveHostname) {
-      console.warn(
-        'Passive host is not set. Attempting to determine WAN IP instead.'
-      );
-
+    if (!this.options.wanIp) {
+      console.warn('WAN IP not set, attempting to determine it automatically.');
       try {
-        const wanIp = await findWanIp();
-        console.log(`Detected WAN IP: ${wanIp}`);
-        this.options.passiveHostname = wanIp;
+        this.options.wanIp = await findWanIp(this.options.wanIpCheckUrl);
+        console.log(`Detected WAN IP: ${this.options.wanIp}`);
       } catch (error) {
         if (error instanceof Error)
           console.error(`Error fetching WAN IP: ${error.message}`);
-        console.warn('Passive connection not available');
       }
+    }
+
+    if (!this.options.passiveHostname) {
+      this.options.passiveHostname =
+        this.options.wanIp || this.url.hostname || 'localhost';
+      console.warn(
+        `Passive hostname not set. Defaulting to: ${this.options.passiveHostname}`
+      );
     }
 
     return new Promise<FtpServerHost>((resolve, reject) => {
       this.server.once('error', reject);
-      this.server.listen(Number(this.url.port), this.url.hostname, () => {
+      const port = this.url.port || (this.url.protocol === 'ftps:' ? 990 : 21);
+      this.server.listen(Number(port), this.url.hostname, () => {
         this.server.removeListener('error', reject);
         const host = {
           protocol: this.url.protocol.replace(/\W/g, ''),
           ip: this.url.hostname,
-          port: Number(this.url.port),
+          port: Number(port),
           passiveHostname: this.options.passiveHostname,
           passivePortRange: this.options.passivePortRange,
         };
