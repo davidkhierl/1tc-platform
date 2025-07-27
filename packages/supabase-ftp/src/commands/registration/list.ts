@@ -18,7 +18,10 @@ export const list: CommandRegistry = {
       const args = command.arg.split(/\s+/).filter(Boolean);
 
       const options = args.filter(arg => arg.startsWith('-'));
-      showHidden = options.some(arg => arg.includes('a')); // -a or -al
+      showHidden = options.some(arg => {
+        const flags = arg.slice(1);
+        return /^[la]*a[la]*$/.test(flags); // Only match combinations of 'l' and 'a' where 'a' is present
+      });
 
       const nonOption = args.find(arg => !arg.startsWith('-'));
       if (nonOption) path = nonOption;
