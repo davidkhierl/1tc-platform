@@ -27,7 +27,8 @@ abstract class FileSystem {
   ) {
     this.connection = connection;
     this._root = this.resolveRootPath(root);
-    this.cwd = this.normalizePath(cwd || '/');
+    this.cwd = cwd || '/';
+    if (!this.cwd.startsWith('/')) this.cwd = '/' + this.cwd;
   }
 
   get root() {
