@@ -11,12 +11,6 @@ export const list: CommandRegistry = {
     if (!fs.get) return this.reply(502, 'Not supported by file system');
     if (!fs.list) return this.reply(502, 'LIST not supported by file system');
 
-    if (!this.connector)
-      return this.reply(
-        425,
-        'Use PASV or PORT to establish data connection first'
-      );
-
     let path = '.';
     let showHidden = false;
     if (command.arg) {
