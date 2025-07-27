@@ -1,12 +1,12 @@
 import tls from 'node:tls';
 import net from 'node:net';
-import { Stats } from 'node:fs';
 import EventEmitter from 'node:events';
 import { getNextPortFactory } from './helpers/find-port.js';
 import { Connection } from './connection.js';
 import { SupabaseClient } from '@supabase/supabase-js';
 import FileSystem from './fs/fs.js';
 import { SupabaseFtpError } from './errors.js';
+import { findWanIp } from './helpers/find-wan-ip.js';
 
 export interface FtpServerOptions {
   url: string;
@@ -176,10 +176,21 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
   }
 
   async listen(cb?: (host: FtpServerHost) => void) {
-    if (!this.options.passiveHostname)
+    if (!this.options.passiveHostname) {
       console.warn(
-        'Passive host is not set. Passive connections not available.'
+        'Passive host is not set. Attempting to determine WAN IP instead.'
       );
+
+      try {
+        const wanIp = await findWanIp();
+        console.log(`Detected WAN IP: ${wanIp}`);
+        this.options.passiveHostname = wanIp;
+      } catch (error) {
+        if (error instanceof Error)
+          console.error(`Error fetching WAN IP: ${error.message}`);
+        console.warn('Passive connection not available');
+      }
+    }
 
     return new Promise<FtpServerHost>((resolve, reject) => {
       this.server.once('error', reject);
@@ -189,6 +200,8 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
           protocol: this.url.protocol.replace(/\W/g, ''),
           ip: this.url.hostname,
           port: Number(this.url.port),
+          passiveHostname: this.options.passiveHostname,
+          passivePortRange: this.options.passivePortRange,
         };
         resolve(host);
         if (cb) cb(host);
