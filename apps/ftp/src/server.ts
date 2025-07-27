@@ -12,7 +12,7 @@ const ftpServer = createFtpServer(supabase, {
   url: 'ftp://0.0.0.0:2121',
   anonymous: true,
   greeting: 'Welcome to the Supabase FTP Server! powered by 1TC',
-  passiveHostname: passiveHostname,
+  passiveHostname,
 });
 
 ftpServer.on('login', ({ connection, username, password }, resolve, reject) => {
