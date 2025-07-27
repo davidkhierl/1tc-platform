@@ -1,3 +1,4 @@
+import { FileSystemError } from '../../errors.js';
 import getFileStat from '../../helpers/file-stat.js';
 import { CommandRegistry } from '../registry.js';
 
@@ -29,7 +30,25 @@ const mlst: CommandRegistry = {
       })
       .catch((err: any) => {
         console.error('MLST error:', err);
-        return this.reply(550, `Failed to get file info: ${err.message}`);
+
+        if (err instanceof FileSystemError) {
+          return this.reply(550, `File system error: ${err.message}`);
+        }
+
+        if (err.code === 'ENOENT') {
+          return this.reply(550, `${path}: No such file or directory`);
+        }
+        if (err.code === 'EACCES') {
+          return this.reply(550, `${path}: Permission denied`);
+        }
+        if (err.code === 'EISDIR' && path !== '.') {
+          return this.reply(550, `${path}: Is a directory`);
+        }
+
+        return this.reply(
+          550,
+          `Failed to get file info: ${err.message || 'Unknown error'}`
+        );
       });
   },
   syntax: '{{cmd}} [<path>]',
