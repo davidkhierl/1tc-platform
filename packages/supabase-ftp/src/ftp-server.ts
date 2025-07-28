@@ -263,14 +263,7 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
   }
 
   setupFeaturesMessage() {
-    let features = [];
-    if (this.options.anonymous) features.push('a');
-
-    if (features.length) {
-      features.unshift('Features:');
-      features.push('.');
-    }
-    return features.length ? features.join(' ') : 'Ready';
+    return 'Ready';
   }
 
   disconnectClient(id: string) {
