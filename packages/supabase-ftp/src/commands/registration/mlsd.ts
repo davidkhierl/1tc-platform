@@ -45,12 +45,11 @@ const mlsd: CommandRegistry = {
           .join('\r\n');
 
         return this.reply(
-          {},
           {
             raw: true,
             socket,
-            message,
-          }
+          },
+          message
         );
       })
       .then(() => this.reply(226, 'MLSD complete'))
@@ -77,7 +76,7 @@ const mlsd: CommandRegistry = {
   syntax: '{{cmd}} [<path>]',
   description: 'List directory contents for machine processing',
   flags: {
-    feat: 'MLST Type*;Size*;Modify*;Perm*;UNIX.mode*;',
+    feat: 'MLSD',
   },
 };
 
