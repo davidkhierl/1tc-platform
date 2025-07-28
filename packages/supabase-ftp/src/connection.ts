@@ -8,6 +8,7 @@ import { Commands } from './commands/commands.js';
 import DEFAULT_MESSAGES from './messages.js';
 import FileSystem from './fs/fs.js';
 import SupabaseFileSystem from './fs/supabase-fs.js';
+import { RateLimiter } from './rate-limiter.js';
 
 async function mapSeries<T extends any[], R>(
   arr: T,
@@ -56,11 +57,18 @@ export class Connection extends EventEmitter {
   fs: FileSystem | null = null;
   renameFrom: string | null = null;
   listFormat: 'ls' | 'ep' = 'ls';
+  private rateLimiter: RateLimiter;
 
   constructor(server: FtpServer, socket: net.Socket) {
     super();
     this.server = server;
     this.commandSocket = socket;
+
+    this.rateLimiter = new RateLimiter(300, 60000);
+
+    if (this.server.options.timeout > 0) {
+      this.commandSocket.setTimeout(this.server.options.timeout);
+    }
 
     this.commandSocket.on('error', err => {
       console.error('Client command socket error:', err);
@@ -73,7 +81,7 @@ export class Connection extends EventEmitter {
     this.commandSocket.on('data', this._handleData.bind(this));
     this.commandSocket.on('timeout', () => {
       console.warn('Client command socket timeout');
-      this.close();
+      this.close(421, 'Timeout, closing control connection');
     });
     this.commandSocket.on('close', () => {
       if (this.connector) this.connector.end();
@@ -84,8 +92,34 @@ export class Connection extends EventEmitter {
   }
 
   private _handleData(data: Buffer<ArrayBufferLike>) {
-    const messages = data.toString(this.encoding).split('\r\n').filter(Boolean);
-    console.log('Received data:', messages);
+    const maxMessageSize = 8192;
+    if (data.length > maxMessageSize) {
+      console.warn('Oversized command received, closing connection');
+      this.close(500, 'Command too long');
+      return Promise.resolve();
+    }
+
+    const rawMessages = data.toString(this.encoding).split('\r\n');
+
+    const messages = rawMessages
+      .filter(Boolean)
+      .map(msg => msg.trim())
+      .filter(msg => msg.length > 0 && msg.length <= 512)
+      .slice(0, 10);
+
+    if (messages.length === 0) {
+      return Promise.resolve();
+    }
+
+    console.log('FTP messages received:', messages);
+
+    const clientId = this.ip || this.id;
+    if (!this.rateLimiter.isAllowed(clientId)) {
+      console.warn('Rate limit exceeded for client');
+      this.close(421, 'Rate limit exceeded');
+      return Promise.resolve();
+    }
+
     return mapSeries(messages, message => this.commands.handle(message));
   }
 
@@ -236,7 +270,14 @@ export class Connection extends EventEmitter {
         mapSeries(satisfiedLetters, letter => processLetter(letter))
       )
       .catch(error => {
-        console.error('Satisfy Parameters Error', error);
+        // Log error details for debugging but don't expose to client
+        console.error('Reply processing error:', error);
+        // Send generic error to client to avoid information disclosure
+        if (this.commandSocket && this.commandSocket.writable) {
+          this.commandSocket.write(
+            '451 Requested action aborted: local error in processing\r\n'
+          );
+        }
       });
   }
 }
