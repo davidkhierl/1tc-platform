@@ -1,4 +1,5 @@
 import { format, differenceInMonths, getUnixTime } from 'date-fns';
+import mime from 'mime-types';
 import { FileSystemError } from '../errors.js';
 import { FileStats } from '../fs/fs.js';
 
@@ -112,6 +113,15 @@ function mlsd(fileStat: FileStats): string {
     }
   }
   facts.push(`Perm=${perm}`);
+
+  // Add Media-Type fact for files only (not directories) according to RFC 3659 section 7.5.8
+  if (fileStat.isFile() && fileStat.name) {
+    // Use stored mediaType from Supabase metadata, fallback to mime.lookup()
+    const mediaType = fileStat.mediaType || mime.lookup(fileStat.name);
+    if (mediaType) {
+      facts.push(`Media-Type=${mediaType}`);
+    }
+  }
 
   if (fileStat.mode) {
     facts.push(`UNIX.mode=0${(fileStat.mode & 0o777).toString(8)}`);

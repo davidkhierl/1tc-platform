@@ -9,6 +9,7 @@ export interface FileStats {
   size: number;
   mtime: Date;
   mode: number;
+  mediaType?: string;
 }
 
 export interface StreamResult {

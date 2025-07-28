@@ -1,4 +1,5 @@
 import { PassThrough, Readable, Stream, Writable } from 'node:stream';
+import mime from 'mime-types';
 import tus from 'tus-js-client';
 import { Connection } from '../connection.js';
 import FileSystem, { FileStats, StreamResult } from './fs.js';
@@ -176,12 +177,14 @@ export default class SupabaseFileSystem extends FileSystem {
           const lastModified = new Date(
             item.updated_at || item.created_at || Date.now()
           );
+          const mediaType = item.metadata?.mimetype;
 
           return {
             name: item.name,
             size: size,
             mtime: lastModified,
             mode: isDirectory ? 0o755 : 0o644, // Directory: 755, File: 644
+            mediaType: mediaType,
             isDirectory: () => isDirectory,
             isFile: () => !isDirectory,
           };
@@ -220,12 +223,15 @@ export default class SupabaseFileSystem extends FileSystem {
         const lastModified = new Date(
           file.updated_at || file.created_at || Date.now()
         );
+        const mediaType = file.metadata?.mimetype;
 
+        console.log(file);
         return {
           name: file.name,
           size: size,
           mtime: lastModified,
           mode: isDirectory ? 0o755 : 0o644,
+          mediaType: mediaType,
           isDirectory: () => isDirectory,
           isFile: () => !isDirectory,
         };
@@ -244,6 +250,7 @@ export default class SupabaseFileSystem extends FileSystem {
           size: 0,
           mtime: new Date(),
           mode: 0o755,
+          mediaType: undefined, // Directories don't have media types
           isDirectory: () => true,
           isFile: () => false,
         };
@@ -342,6 +349,8 @@ export default class SupabaseFileSystem extends FileSystem {
 
     const pass = new Stream.PassThrough();
 
+    const mediaType = mime.lookup(fileName) || 'application/octet-stream';
+
     const upload = new tus.Upload(pass, {
       endpoint: `${process.env.SUPABASE_URL}/storage/v1/upload/resumable`,
       retryDelays: [0, 3000, 5000, 10000, 20000],
@@ -355,7 +364,7 @@ export default class SupabaseFileSystem extends FileSystem {
       metadata: {
         bucketName: this.bucketName,
         objectName: fsPath,
-        contentType: 'application/octet-stream',
+        contentType: mediaType,
       },
       chunkSize: 6 * 1024 * 1024, // 6MB chunks
       onError: error => {
