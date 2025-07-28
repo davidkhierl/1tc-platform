@@ -53,13 +53,34 @@ export default class PassiveConnector extends Connector {
       let idleServerTimeout: NodeJS.Timeout | undefined;
 
       const connectionHandler = async (socket: net.Socket) => {
-        const normalizeAddress = (addr: string) => addr.replace(/^::ffff:/, '');
+        const normalizeAddress = (addr: string) => {
+          return addr.replace(/^::ffff:/, '').toLowerCase();
+        };
+
+        const validateClientAddress = (
+          commandAddr: string,
+          dataAddr: string
+        ): boolean => {
+          const normalizedCommand = normalizeAddress(commandAddr);
+          const normalizedData = normalizeAddress(dataAddr);
+
+          const isLoopback = (addr: string) =>
+            addr === '127.0.0.1' || addr === '::1' || addr.startsWith('127.');
+
+          if (isLoopback(normalizedCommand) && !isLoopback(normalizedData)) {
+            return false;
+          }
+
+          return normalizedCommand === normalizedData;
+        };
 
         if (
           !this.connection.commandSocket.remoteAddress ||
           !socket.remoteAddress ||
-          normalizeAddress(this.connection.commandSocket.remoteAddress) !==
-            normalizeAddress(socket.remoteAddress)
+          !validateClientAddress(
+            this.connection.commandSocket.remoteAddress,
+            socket.remoteAddress
+          )
         ) {
           console.error('Connecting address does not match', {
             passiveConnection: socket.remoteAddress,
