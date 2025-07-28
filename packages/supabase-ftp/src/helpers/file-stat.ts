@@ -97,6 +97,7 @@ function mlsd(fileStat: FileStats): string {
       perm += 'm'; // make subdirectories
       perm += 'd'; // delete files in directory
       perm += 'f'; // rename files in directory
+      perm += 'p'; // purge (delete directory and contents)
     }
   } else {
     // File permissions
@@ -104,6 +105,7 @@ function mlsd(fileStat: FileStats): string {
       perm += 'r'; // read file
     }
     if (fileStat.mode && fileStat.mode & 0o200) {
+      perm += 'a'; // append to file
       perm += 'w'; // write file
       perm += 'd'; // delete file
       perm += 'f'; // rename file
@@ -111,10 +113,7 @@ function mlsd(fileStat: FileStats): string {
   }
   facts.push(`Perm=${perm}`);
 
-  if (fileStat.mode) {
-    facts.push(`UNIX.mode=0${(fileStat.mode & 0o777).toString(8)}`);
-  }
-
   const factsString = facts.join(';');
-  return `${factsString} ${fileStat.name}`;
+
+  return `${factsString}; ${fileStat.name}`;
 }
