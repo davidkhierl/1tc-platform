@@ -113,6 +113,10 @@ function mlsd(fileStat: FileStats): string {
   }
   facts.push(`Perm=${perm}`);
 
+  if (fileStat.mode) {
+    facts.push(`UNIX.mode=0${(fileStat.mode & 0o777).toString(8)}`);
+  }
+
   const factsString = facts.join(';');
 
   return `${factsString}; ${fileStat.name}`;

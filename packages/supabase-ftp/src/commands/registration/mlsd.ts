@@ -76,7 +76,7 @@ const mlsd: CommandRegistry = {
   syntax: '{{cmd}} [<path>]',
   description: 'List directory contents for machine processing',
   flags: {
-    feat: 'MLSD Type*;Size*;Modify*;Perm*;',
+    feat: 'MLSD Type*;Size*;Modify*;Perm*;UNIX.mode*;',
   },
 };
 
