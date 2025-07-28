@@ -38,11 +38,32 @@ export class Commands {
   }
 
   parse(message: string): ParsedCommand {
-    const strippedMessage = message.replace(/"/g, '');
-    let [directive, ...args] = strippedMessage.split(' ');
+    // Input validation and sanitization
+    if (!message || message.length > 512) {
+      throw new GeneralError('Invalid command length', 500);
+    }
+
+    // Remove dangerous characters and normalize
+    const sanitizedMessage = message
+      .replace(/[^\x20-\x7E\r\n]/g, '') // Remove non-printable chars
+      .replace(/"/g, '')
+      .trim();
+
+    if (!sanitizedMessage) {
+      throw new GeneralError('Empty command', 500);
+    }
+
+    let [directive, ...args] = sanitizedMessage.split(' ');
     directive = directive?.trim().toUpperCase();
 
-    if (!directive) throw new GeneralError('Failed to parse command', 500);
+    if (!directive || directive.length > 4) {
+      throw new GeneralError('Invalid command directive', 500);
+    }
+
+    // Validate directive contains only letters
+    if (!/^[A-Z]+$/.test(directive)) {
+      throw new GeneralError('Invalid command format', 500);
+    }
 
     const parseCommandFlags = !['RETR', 'SIZE', 'STOR'].includes(directive);
     const params = args.reduce<{ arg: string[]; flags: string[] }>(
@@ -58,7 +79,7 @@ export class Commands {
       directive,
       arg: params.arg.length ? params.arg.join(' ') : null,
       flags: params.flags,
-      raw: message,
+      raw: sanitizedMessage,
     };
   }
 
