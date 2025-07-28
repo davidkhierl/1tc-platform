@@ -7,6 +7,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import FileSystem from './fs/fs.js';
 import { SupabaseFtpError } from './errors.js';
 import { findWanIp } from './helpers/find-wan-ip.js';
+import { RateLimiter } from './rate-limiter.js';
+import { isV4Format, normalize } from '@1tc/utils/ip';
 
 export interface FtpServerOptions {
   url: string;
@@ -83,6 +85,7 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
   readonly url: URL;
   readonly server: net.Server;
   readonly supabase: SupabaseClient;
+  private connectionRateLimiter: RateLimiter;
 
   readonly getNextPassivePort: () => Promise<number>;
 
@@ -91,6 +94,8 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
 
     this.options = options;
     this.supabase = supabase;
+
+    this.connectionRateLimiter = new RateLimiter(30, 60000);
 
     this._greeting = this.setupGreeting(this.options.greeting);
     this._features = this.setupFeaturesMessage();
@@ -107,10 +112,37 @@ export class FtpServer extends EventEmitter<FtpServerEvent> {
     this.options.timeout = isNaN(timeout) ? 0 : timeout;
 
     const serverConnectionHandler = async (socket: net.Socket) => {
+      const rawClientIp = socket.remoteAddress || 'unknown';
+
+      let clientIp = rawClientIp;
+      try {
+        if (rawClientIp !== 'unknown') {
+          clientIp = normalize(rawClientIp);
+        }
+      } catch {
+        if (rawClientIp.startsWith('::ffff:')) {
+          const extractedIp = rawClientIp.substring(7);
+          if (isV4Format(extractedIp)) {
+            clientIp = extractedIp;
+          }
+        }
+      }
+
+      if (!this.connectionRateLimiter.isAllowed(clientIp)) {
+        console.warn('Connection rate limit exceeded for IP:', clientIp);
+        socket.write('421 Too many connections from your IP address\r\n');
+        socket.destroy();
+        return;
+      }
+
       if (this.options.timeout > 0) socket.setTimeout(this.options.timeout);
 
       let connection = new Connection(this, socket);
       this._connections.set(connection.id, connection);
+
+      console.log(
+        `New FTP connection: ${clientIp} (${connection.id}) - Total: ${this._connections.size}`
+      );
 
       socket.on('close', () => this.disconnectClient(connection.id));
       socket.once('close', () => {
