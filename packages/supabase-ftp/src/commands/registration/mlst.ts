@@ -53,9 +53,6 @@ const mlst: CommandRegistry = {
   },
   syntax: '{{cmd}} [<path>]',
   description: 'List single object for machine processing',
-  flags: {
-    feat: 'MLST Type*;Size*;Modify*;Perm*;UNIX.mode*;',
-  },
 };
 
 export default mlst;
