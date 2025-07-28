@@ -43,7 +43,7 @@ const pasv: CommandRegistry = {
   syntax: '{{cmd}}',
   description: 'Initiate passive mode',
   flags: {
-    feat: 'EPSV',
+    feat: 'PASV',
   },
 };
 
