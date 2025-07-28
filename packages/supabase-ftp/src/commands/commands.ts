@@ -1,6 +1,7 @@
 import REGISTRY from './registry.js';
 import { Connection } from '../connection.js';
-import { GeneralError } from '../errors.js';
+import { CommandError } from '../errors.js';
+import { FTP_CODES } from '../messages.js';
 
 const CMD_FLAG_REGEX = new RegExp(/^-(\w{1})$/);
 
@@ -40,7 +41,7 @@ export class Commands {
   parse(message: string): ParsedCommand {
     // Input validation and sanitization
     if (!message || message.length > 512) {
-      throw new GeneralError('Invalid command length', 500);
+      throw new CommandError('Invalid command length');
     }
 
     // Remove dangerous characters and normalize
@@ -50,19 +51,19 @@ export class Commands {
       .trim();
 
     if (!sanitizedMessage) {
-      throw new GeneralError('Empty command', 500);
+      throw new CommandError('Empty command');
     }
 
     let [directive, ...args] = sanitizedMessage.split(' ');
     directive = directive?.trim().toUpperCase();
 
     if (!directive || directive.length > 4) {
-      throw new GeneralError('Invalid command directive', 500);
+      throw new CommandError('Invalid command directive');
     }
 
     // Validate directive contains only letters
     if (!/^[A-Z]+$/.test(directive)) {
-      throw new GeneralError('Invalid command format', 500);
+      throw new CommandError('Invalid command format');
     }
 
     const parseCommandFlags = !['RETR', 'SIZE', 'STOR'].includes(directive);
@@ -90,13 +91,13 @@ export class Commands {
 
     if (!Object.prototype.hasOwnProperty.call(REGISTRY, command.directive))
       return this.connection.reply(
-        502,
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
         `Command not allowed: ${command.directive}`
       );
 
     if (this.blacklist.includes(command.directive))
       return this.connection.reply(
-        502,
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
         `Command blacklisted: ${command.directive}`
       );
 
@@ -105,14 +106,14 @@ export class Commands {
       !this.whitelist.includes(command.directive)
     )
       return this.connection.reply(
-        502,
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
         `Command not whitelisted: ${command.directive}`
       );
 
     const commandRegister = REGISTRY[command.directive];
     if (!commandRegister)
       return this.connection.reply(
-        502,
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
         `Command not registered: ${command.directive}`
       );
 
@@ -120,13 +121,13 @@ export class Commands {
       commandRegister && commandRegister.flags ? commandRegister.flags : {};
     if (!commandFlags.no_auth && !this.connection.authenticated)
       return this.connection.reply(
-        530,
+        FTP_CODES.NOT_LOGGED_IN,
         `Command requires authentication: ${command.directive}`
       );
 
     if (!commandRegister.handler)
       return this.connection.reply(
-        502,
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
         `Handler not set on command: ${command.directive}`
       );
 
