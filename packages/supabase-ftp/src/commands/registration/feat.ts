@@ -5,22 +5,22 @@ const feat: CommandRegistry = {
   handler: async function () {
     const registry = (await import('../registry.js')).default;
     const features = Object.keys(registry)
-      .reduce(
-        (feats, cmd) => {
-          const feat = registry[cmd]?.flags?.feat ?? null;
-          if (feat) return feats.concat(feat);
-          return feats;
-        },
-        ['UTF8']
-      )
+      .reduce<string[]>((feats, cmd) => {
+        const feat = registry[cmd]?.flags?.feat ?? null;
+        if (feat) return feats.concat(feat);
+        return feats;
+      }, [])
       .sort()
       .map(feat => ({
         message: ` ${feat}`,
         raw: true,
       }));
-    return features.length
-      ? this.reply(211, 'Extensions supported', ...features, 'End')
-      : this.reply(211, 'No features');
+
+    if (features.length === 0) {
+      return this.reply(211, 'No features');
+    }
+
+    return this.reply(211, 'Extensions supported:', ...features, 'End');
   },
 
   syntax: '{{cmd}}',

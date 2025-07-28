@@ -27,6 +27,9 @@ const opts: CommandRegistry = {
   },
   syntax: '{{cmd}}',
   description: 'Select options for a feature',
+  flags: {
+    feat: 'UTF8',
+  },
 };
 
 function utf8(this: Connection, [setting]: string[] = []) {
@@ -54,11 +57,9 @@ function listOpts(this: Connection, [setting]: string[] = []) {
 
   switch (option) {
     case '-E':
-      // Enable EPLF (Extended Path Listing Format)
       this.listFormat = 'ep';
       return this.reply(200, 'EPLF format enabled');
     case '-L':
-      // Enable standard Unix ls format (default)
       this.listFormat = 'ls';
       return this.reply(200, 'Standard format enabled');
     default:
