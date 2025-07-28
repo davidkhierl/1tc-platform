@@ -3,9 +3,9 @@ import net from 'node:net';
 import crypto from 'node:crypto';
 import { Connector } from './connector/base.js';
 import { FtpServer } from './ftp-server.js';
-import { GeneralError, SocketError } from './errors.js';
+import { SocketError, SecurityError } from './errors.js';
 import { Commands } from './commands/commands.js';
-import DEFAULT_MESSAGES from './messages.js';
+import DEFAULT_MESSAGES, { FTP_CODES } from './messages.js';
 import FileSystem from './fs/fs.js';
 import SupabaseFileSystem from './fs/supabase-fs.js';
 import { RateLimiter } from './rate-limiter.js';
@@ -81,7 +81,10 @@ export class Connection extends EventEmitter {
     this.commandSocket.on('data', this._handleData.bind(this));
     this.commandSocket.on('timeout', () => {
       console.warn('Client command socket timeout');
-      this.close(421, 'Timeout, closing control connection');
+      this.close(
+        FTP_CODES.SERVICE_NOT_AVAILABLE,
+        DEFAULT_MESSAGES[FTP_CODES.SERVICE_NOT_AVAILABLE]
+      );
     });
     this.commandSocket.on('close', () => {
       if (this.connector) this.connector.end();
@@ -95,7 +98,10 @@ export class Connection extends EventEmitter {
     const maxMessageSize = 8192;
     if (data.length > maxMessageSize) {
       console.warn('Oversized command received, closing connection');
-      this.close(500, 'Command too long');
+      this.close(
+        FTP_CODES.SYNTAX_ERROR_COMMAND_UNRECOGNIZED,
+        'Command line too long'
+      );
       return Promise.resolve();
     }
 
@@ -116,7 +122,10 @@ export class Connection extends EventEmitter {
     const clientId = this.ip || this.id;
     if (!this.rateLimiter.isAllowed(clientId)) {
       console.warn('Rate limit exceeded for client');
-      this.close(421, 'Rate limit exceeded');
+      this.close(
+        FTP_CODES.SERVICE_NOT_AVAILABLE,
+        DEFAULT_MESSAGES[FTP_CODES.SERVICE_NOT_AVAILABLE]
+      );
       return Promise.resolve();
     }
 
@@ -147,10 +156,13 @@ export class Connection extends EventEmitter {
     this._secure = value;
   }
 
-  async close(code = 421, message = 'Service closing control connection') {
-    return Promise.resolve(code)
+  async close(code?: number, message?: string) {
+    const defaultCode = FTP_CODES.SERVICE_NOT_AVAILABLE;
+    const defaultMessage = DEFAULT_MESSAGES[FTP_CODES.SERVICE_NOT_AVAILABLE];
+
+    return Promise.resolve(code || defaultCode)
       .then(_code => {
-        if (_code) this.reply(_code, message);
+        if (_code) this.reply(_code, message || defaultMessage);
       })
       .then(() => {
         if (this.commandSocket) this.commandSocket.destroy();
@@ -163,7 +175,10 @@ export class Connection extends EventEmitter {
         const loginListener = this.server.listeners('login');
         if (!loginListener || !loginListener.length) {
           if (!this.server.options.anonymous)
-            throw new GeneralError('No "login" event listener registered', 500);
+            throw new SecurityError(
+              'No "login" event listener registered',
+              FTP_CODES.COMMAND_NOT_IMPLEMENTED
+            );
         }
 
         return this.server.emitPromise('login', {
@@ -275,7 +290,7 @@ export class Connection extends EventEmitter {
         // Send generic error to client to avoid information disclosure
         if (this.commandSocket && this.commandSocket.writable) {
           this.commandSocket.write(
-            '451 Requested action aborted: local error in processing\r\n'
+            `${FTP_CODES.ACTION_ABORTED_LOCAL_ERROR} ${DEFAULT_MESSAGES[FTP_CODES.ACTION_ABORTED_LOCAL_ERROR]}\r\n`
           );
         }
       });
