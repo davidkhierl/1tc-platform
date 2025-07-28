@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createFtpServer } from '@1tc/supabase-ftp';
 import { passiveHostname } from '@1tc/supabase-ftp/helpers/passive-hostname';
-import { GeneralError } from '@1tc/supabase-ftp/errors';
+import { AuthenticationError } from '@1tc/supabase-ftp/errors';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -22,7 +22,7 @@ ftpServer.on('login', ({ connection, username, password }, resolve, reject) => {
       cwd: '/',
     });
   }
-  return reject(new GeneralError('Invalid username or password', 401));
+  return reject(new AuthenticationError('Invalid username or password'));
 });
 
 ftpServer.listen().then(host => {
