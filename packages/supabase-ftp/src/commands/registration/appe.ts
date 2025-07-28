@@ -1,19 +1,32 @@
 import { Readable, Writable } from 'node:stream';
-import { GeneralError, TimeoutError } from '../../errors.js';
+import { TransferError, TimeoutError } from '../../errors.js';
 import { CommandRegistry } from '../registry.js';
 import { Socket } from 'node:net';
+import { FTP_CODES } from '../../messages.js';
 
 const appe: CommandRegistry = {
   directive: 'APPE',
   handler: async function ({ command }) {
     const fs = this.fs;
 
-    if (!fs) return this.reply(550, 'File system not instantiated');
-    if (!fs.write) return this.reply(502, 'Not supported by file system');
+    if (!fs)
+      return this.reply(
+        FTP_CODES.FILE_UNAVAILABLE,
+        'File system not instantiated'
+      );
+    if (!fs.write)
+      return this.reply(
+        FTP_CODES.COMMAND_NOT_IMPLEMENTED,
+        'Not supported by file system'
+      );
 
     const fileName = command.arg;
 
-    if (!fileName) return this.reply(501, 'File name required');
+    if (!fileName)
+      return this.reply(
+        FTP_CODES.SYNTAX_ERROR_PARAMETERS,
+        'File name required'
+      );
 
     return this.connector
       .waitForConnection()
@@ -59,7 +72,7 @@ const appe: CommandRegistry = {
 
         const socketPromise = new Promise((resolve, reject) => {
           if (stream instanceof Readable)
-            return reject(new GeneralError('Stream is not writable', 500));
+            return reject(new TransferError('Stream is not writable'));
 
           this.connector.socket?.pipe(stream, { end: false });
           this.connector.socket?.once('end', () => {
@@ -75,19 +88,24 @@ const appe: CommandRegistry = {
 
         this.restByteCount = 0;
 
-        return this.reply(150)
+        return this.reply(FTP_CODES.FILE_STATUS_OK_OPENING_DATA_CONNECTION)
           .then(() => this.connector.socket && this.connector.socket.resume())
           .then(() => Promise.all([streamPromise, socketPromise]))
           .then(() => this.emit('STOR', null, serverPath))
-          .then(() => this.reply(226, clientPath));
+          .then(() =>
+            this.reply(FTP_CODES.CLOSING_DATA_CONNECTION, clientPath)
+          );
       })
       .catch(err => {
         console.error(err);
         if (err instanceof TimeoutError) {
-          return this.reply(425, 'No connection established');
+          return this.reply(
+            FTP_CODES.CANT_OPEN_DATA_CONNECTION,
+            'No connection established'
+          );
         }
         this.emit('STOR', err);
-        return this.reply(550, err.message);
+        return this.reply(FTP_CODES.FILE_UNAVAILABLE, err.message);
       })
       .then(() => {
         this.connector.end();
