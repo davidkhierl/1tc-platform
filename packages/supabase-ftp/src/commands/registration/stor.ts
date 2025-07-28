@@ -8,7 +8,7 @@ const stor: CommandRegistry = {
   handler: async function ({ command }) {
     const fs = this.fs;
     if (!fs) return this.reply(550, 'File system not instantiated');
-    if (!fs.write) return this.reply(402, 'Not supported by file system');
+    if (!fs.write) return this.reply(502, 'Not supported by file system');
 
     const fileName = command.arg;
 

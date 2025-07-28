@@ -7,7 +7,7 @@ const stou: CommandRegistry = {
     const fs = this.fs;
     if (!fs) return this.reply(550, 'File system not instantiated');
     if (!fs.get || !fs.getUniqueName)
-      return this.reply(402, 'Not supported by file system');
+      return this.reply(502, 'Not supported by file system');
 
     const fileName = args.command.arg;
     if (!fileName) return this.reply(503, 'Must provide file name');

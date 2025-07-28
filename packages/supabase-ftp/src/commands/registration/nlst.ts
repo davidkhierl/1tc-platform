@@ -7,7 +7,7 @@ const nlst: CommandRegistry = {
     const fs = this.fs;
 
     if (!fs) return this.reply(550, 'File system not instantiated');
-    if (!fs.get) return this.reply(402, 'Not supported by file system');
+    if (!fs.get) return this.reply(502, 'Not supported by file system');
     if (!fs.list) return this.reply(502, 'NLST not supported by file system');
 
     let path = '.';

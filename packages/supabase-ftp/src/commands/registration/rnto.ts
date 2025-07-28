@@ -7,7 +7,7 @@ const rnto: CommandRegistry = {
 
     const fs = this.fs;
     if (!fs) return this.reply(550, 'File system not instantiated');
-    if (!fs.rename) return this.reply(402, 'Not supported by file system');
+    if (!fs.rename) return this.reply(502, 'Not supported by file system');
 
     const from = this.renameFrom;
     const to = command.arg;

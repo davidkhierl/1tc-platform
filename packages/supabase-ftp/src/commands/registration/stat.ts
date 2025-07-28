@@ -9,13 +9,13 @@ const stat: CommandRegistry = {
     if (path) {
       const fs = this.fs;
       if (!fs) return this.reply(550, 'File system not instantiated');
-      if (!fs.get) return this.reply(402, 'Not supported by file system');
+      if (!fs.get) return this.reply(502, 'Not supported by file system');
 
       return Promise.resolve(fs.get(path))
         .then(async (stat: FileStats) => {
           if (stat.isDirectory()) {
             if (!fs.list)
-              return this.reply(402, 'Not supported by file system');
+              return this.reply(502, 'Not supported by file system');
 
             return Promise.resolve(fs.list(path)).then(
               async (stats: FileStats[]) => {
