@@ -4,12 +4,18 @@ const feat: CommandRegistry = {
   directive: 'FEAT',
   handler: async function () {
     const registry = (await import('../registry.js')).default;
-    const features = Object.keys(registry)
-      .reduce<string[]>((feats, cmd) => {
-        const feat = registry[cmd]?.flags?.feat ?? null;
-        if (feat) return feats.concat(feat);
-        return feats;
-      }, [])
+    const featuresSet = new Set<string>();
+
+    Object.keys(registry).forEach(cmd => {
+      const feat = registry[cmd]?.flags?.feat ?? null;
+      if (feat) featuresSet.add(feat);
+    });
+
+    if (this.server.options.anonymous) {
+      featuresSet.add('ANON');
+    }
+
+    const features = Array.from(featuresSet)
       .sort()
       .map(feat => ({
         message: ` ${feat}`,
