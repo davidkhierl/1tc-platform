@@ -1,6 +1,7 @@
 import PassiveConnector from '../../connector/passive.js';
-import { GeneralError } from '../../errors.js';
+import { ConnectionError } from '../../errors.js';
 import { CommandRegistry } from '../registry.js';
+import { FTP_CODES } from '../../messages.js';
 
 const epsv: CommandRegistry = {
   directive: 'EPSV',
@@ -11,13 +12,19 @@ const epsv: CommandRegistry = {
       .then(server => {
         const addr = server.address();
         if (!addr || typeof addr !== 'object' || !('port' in addr)) {
-          throw new GeneralError('Failed to get server address', 425);
+          throw new ConnectionError('Failed to get server address');
         }
-        return this.reply(229, `EPSV OK (|||${addr.port}|)`);
+        return this.reply(
+          FTP_CODES.ENTERING_EXTENDED_PASSIVE_MODE,
+          `EPSV OK (|||${addr.port}|)`
+        );
       })
       .catch(err => {
         console.log('EPSV connection error:', err);
-        return this.reply(err.code || 425, err.message);
+        return this.reply(
+          err.code || FTP_CODES.CANT_OPEN_DATA_CONNECTION,
+          err.message
+        );
       });
   },
   syntax: '{{cmd}} [<protocol>]',
