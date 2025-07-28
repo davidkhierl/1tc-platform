@@ -4,6 +4,7 @@ import { Connector } from './base.js';
 import { ConnectorError } from '../errors.js';
 import { Connection } from '../connection.js';
 import { error } from 'node:console';
+import { isEqual, isLoopback, normalize } from '@1tc/utils/ip';
 
 const CONNECT_TIMEOUT = 30e3;
 
@@ -53,25 +54,26 @@ export default class PassiveConnector extends Connector {
       let idleServerTimeout: NodeJS.Timeout | undefined;
 
       const connectionHandler = async (socket: net.Socket) => {
-        const normalizeAddress = (addr: string) => {
-          return addr.replace(/^::ffff:/, '').toLowerCase();
-        };
-
         const validateClientAddress = (
           commandAddr: string,
           dataAddr: string
         ): boolean => {
-          const normalizedCommand = normalizeAddress(commandAddr);
-          const normalizedData = normalizeAddress(dataAddr);
+          try {
+            const normalizedCommand = normalize(commandAddr);
+            const normalizedData = normalize(dataAddr);
 
-          const isLoopback = (addr: string) =>
-            addr === '127.0.0.1' || addr === '::1' || addr.startsWith('127.');
+            if (isEqual(normalizedCommand, normalizedData)) {
+              return true;
+            }
 
-          if (isLoopback(normalizedCommand) && !isLoopback(normalizedData)) {
+            if (isLoopback(normalizedCommand) && isLoopback(normalizedData)) {
+              return true;
+            }
+
+            return false;
+          } catch (error) {
             return false;
           }
-
-          return normalizedCommand === normalizedData;
         };
 
         if (
