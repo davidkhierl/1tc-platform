@@ -103,6 +103,42 @@ export default class SupabaseFileSystem extends FileSystem {
     return { clientPath, fsPath };
   }
 
+  /**
+   * Get directory modification time from .emptyFolderPlaceholder file
+   */
+  private async _getDirectoryMtime(fsPath: string): Promise<Date> {
+    try {
+      const { data: placeholderData, error: placeholderError } =
+        await this.connection.server.supabase.storage
+          .from(this.bucketName)
+          .list(fsPath || undefined, {
+            limit: 1000,
+            search: '.emptyFolderPlaceholder',
+          });
+
+      if (!placeholderError && placeholderData && placeholderData.length > 0) {
+        const placeholderFile = placeholderData.find(
+          item => item.name === '.emptyFolderPlaceholder'
+        );
+        if (placeholderFile) {
+          return new Date(
+            placeholderFile.updated_at ||
+              placeholderFile.created_at ||
+              Date.now()
+          );
+        }
+      }
+    } catch (error) {
+      console.debug(
+        'Could not retrieve .emptyFolderPlaceholder file for directory mtime:',
+        error
+      );
+    }
+
+    // Fallback to current time if .emptyFolderPlaceholder file not found
+    return new Date();
+  }
+
   async chdir(path = '.'): Promise<string> {
     try {
       if (path === '/') {
@@ -169,15 +205,68 @@ export default class SupabaseFileSystem extends FileSystem {
         return [];
       }
 
+      const subdirectories = data.filter(
+        item => !item.metadata && item.name !== '.emptyFolderPlaceholder'
+      );
+
+      const directoryMtimes = new Map<string, Date>();
+
+      if (subdirectories.length > 0) {
+        const subdirMtimePromises = subdirectories.map(async dir => {
+          const directoryPath = fsPath ? `${fsPath}/${dir.name}` : dir.name;
+          try {
+            const { data: placeholderData } =
+              await this.connection.server.supabase.storage
+                .from(this.bucketName)
+                .list(directoryPath, {
+                  limit: 100,
+                  search: '.emptyFolderPlaceholder',
+                });
+
+            const placeholderFile = placeholderData?.find(
+              item => item.name === '.emptyFolderPlaceholder'
+            );
+            if (placeholderFile) {
+              return {
+                name: dir.name,
+                mtime: new Date(
+                  placeholderFile.updated_at ||
+                    placeholderFile.created_at ||
+                    Date.now()
+                ),
+              };
+            }
+          } catch (error) {
+            console.debug(
+              `Could not get .emptyFolderPlaceholder file for directory ${dir.name}:`,
+              error
+            );
+          }
+          return { name: dir.name, mtime: new Date() };
+        });
+
+        const subdirMtimes = await Promise.all(subdirMtimePromises);
+        subdirMtimes.forEach(({ name, mtime }) => {
+          directoryMtimes.set(name, mtime);
+        });
+      }
+
       const items = data
         .filter(item => showHidden || !item.name.startsWith('.'))
         .map((item): FileStats => {
           const isDirectory = !item.metadata;
           const size = item.metadata?.size || 0;
-          const lastModified = new Date(
+          let lastModified = new Date(
             item.updated_at || item.created_at || Date.now()
           );
           const mediaType = item.metadata?.mimetype;
+
+          if (isDirectory) {
+            const dirMtime = directoryMtimes.get(item.name);
+            if (dirMtime) {
+              lastModified = dirMtime;
+            }
+          }
 
           return {
             name: item.name,
@@ -225,7 +314,6 @@ export default class SupabaseFileSystem extends FileSystem {
         );
         const mediaType = file.metadata?.mimetype;
 
-        console.log(file);
         return {
           name: file.name,
           size: size,
@@ -245,10 +333,12 @@ export default class SupabaseFileSystem extends FileSystem {
           });
 
       if (!dirError && dirData) {
+        const directoryMtime = await this._getDirectoryMtime(fsPath);
+
         return {
           name: fileName.split('/').pop() || fileName,
           size: 0,
-          mtime: new Date(),
+          mtime: directoryMtime,
           mode: 0o755,
           mediaType: undefined, // Directories don't have media types
           isDirectory: () => true,
@@ -454,7 +544,7 @@ export default class SupabaseFileSystem extends FileSystem {
     try {
       const { clientPath, fsPath } = this._resolvePath(path);
 
-      const placeholderPath = `${fsPath}/.keep`;
+      const placeholderPath = `${fsPath}/.emptyFolderPlaceholder`;
 
       const emptyBuffer = new Uint8Array(0);
 
@@ -511,7 +601,7 @@ export default class SupabaseFileSystem extends FileSystem {
     toPath: string
   ): Promise<void> {
     try {
-      const placeholderPath = `${toPath}/.keep`;
+      const placeholderPath = `${toPath}/.emptyFolderPlaceholder`;
       const emptyBuffer = new Uint8Array(0);
 
       const { error: createError } =
@@ -568,7 +658,7 @@ export default class SupabaseFileSystem extends FileSystem {
       const { error: removeError } =
         await this.connection.server.supabase.storage
           .from(this.bucketName)
-          .remove([`${fromPath}/.keep`]);
+          .remove([`${fromPath}/.emptyFolderPlaceholder`]);
 
       if (removeError && !removeError.message.includes('does not exist')) {
         console.warn(
