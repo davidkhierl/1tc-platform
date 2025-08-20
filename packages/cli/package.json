@@ -21,9 +21,9 @@
     "@1tc/eslint-config": "workspace:*",
     "@1tc/typescript-config": "workspace:*",
     "@1tc/vitest-config": "workspace:*",
+    "@types/node": "^24.3.0",
     "@vitest/coverage-istanbul": "^3.2.4",
-    "vitest": "^3.2.4",
-    "@types/node": "^24.1.0",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "^3.2.4"
   }
 }

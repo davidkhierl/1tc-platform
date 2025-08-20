@@ -37,9 +37,9 @@
     "@1tc/eslint-config": "workspace:*",
     "@1tc/typescript-config": "workspace:*",
     "@1tc/vitest-config": "workspace:*",
-    "@supabase/supabase-js": "^2.52.1",
+    "@supabase/supabase-js": "^2.55.0",
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.3.0",
     "@vitest/coverage-istanbul": "^3.2.4",
     "typescript": "5.8.3",
     "vitest": "^3.2.4"

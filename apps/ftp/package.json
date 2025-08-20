@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@1tc/supabase-ftp": "workspace:*",
-    "@supabase/supabase-js": "^2.52.1",
+    "@supabase/supabase-js": "^2.55.0",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
     "@1tc/eslint-config": "workspace:*",
     "@1tc/typescript-config": "workspace:*",
     "@1tc/utils": "workspace:*",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.3.0",
     "typescript": "5.8.3"
   }
 }
