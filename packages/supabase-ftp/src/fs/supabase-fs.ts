@@ -36,12 +36,11 @@ export default class SupabaseFileSystem extends FileSystem {
   }
 
   private createDate(item: { updated_at?: string; created_at?: string }): Date {
-    return new Date(item.updated_at || item.created_at || Date.now());
+    return new Date(item.updated_at ?? item.created_at ?? Date.now());
   }
 
-  private isEmptyFolderPlaceholder(item: { name: string }): boolean {
-    return item.name === EMPTY_FOLDER_PLACEHOLDER;
-  }
+  private isEmptyFolderPlaceholder = (item: { name: string }): boolean =>
+    item.name === EMPTY_FOLDER_PLACEHOLDER;
 
   private createFileStats(
     name: string,
@@ -49,47 +48,45 @@ export default class SupabaseFileSystem extends FileSystem {
     isDirectory: boolean,
     customMtime?: Date
   ): FileStats {
+    const mtime = customMtime ?? this.createDate(item);
+    const mode = isDirectory ? 0o755 : 0o644;
+
     return {
       name,
-      size: item.metadata?.size || 0,
-      mtime: customMtime || this.createDate(item),
-      mode: isDirectory ? 0o755 : 0o644,
+      size: item.metadata?.size ?? 0,
+      mtime,
+      mode,
       mediaType: item.metadata?.mimetype,
       isDirectory: () => isDirectory,
       isFile: () => !isDirectory,
     };
   }
 
-  private async findPlaceholderFile(
-    fsPath: string
-  ): Promise<{ updated_at?: string; created_at?: string } | null> {
+  private async findPlaceholderFile(fsPath: string) {
     try {
       const { data, error } = await this.storage.list(fsPath || undefined, {
         limit: DEFAULT_LIST_LIMIT,
         search: EMPTY_FOLDER_PLACEHOLDER,
       });
 
-      if (error || !data?.length) return null;
-
-      return data.find(this.isEmptyFolderPlaceholder) || null;
+      return error || !data?.length
+        ? null
+        : (data.find(this.isEmptyFolderPlaceholder) ?? null);
     } catch {
       return null;
     }
   }
 
   private async createEmptyFolderPlaceholder(fsPath: string): Promise<void> {
-    const placeholderPath = `${fsPath}/${EMPTY_FOLDER_PLACEHOLDER}`;
-    const emptyBuffer = new Uint8Array(0);
+    const { error } = await this.storage.upload(
+      `${fsPath}/${EMPTY_FOLDER_PLACEHOLDER}`,
+      new Uint8Array(0),
+      { contentType: 'application/octet-stream', upsert: true }
+    );
 
-    const { error } = await this.storage.upload(placeholderPath, emptyBuffer, {
-      contentType: 'application/octet-stream',
-      upsert: true,
-    });
-
-    if (error) {
-      throw new Error(`Failed to create directory: ${error.message}`);
-    }
+    if (error) throw new Error(`Failed to create directory: ${error.message}`);
   }
+
   protected normalizePath(path: string): string {
     return path
       .replace(/[/\\]+/g, '/')
@@ -98,19 +95,18 @@ export default class SupabaseFileSystem extends FileSystem {
   }
 
   protected resolveRootPath(root?: string): string {
-    if (!root || root === '/' || root.trim() === '') {
+    const trimmedRoot = root?.trim();
+    if (!trimmedRoot || trimmedRoot === '/') {
       throw new Error(
         "Invalid bucket name: root cannot be empty, '/', or whitespace"
       );
     }
 
-    const normalizedRoot = this.normalizePath(root);
-    const bucketName = normalizedRoot.split('/')[0];
+    const bucketName = this.normalizePath(trimmedRoot).split('/')[0];
 
     if (!bucketName || !BUCKET_NAME_REGEX.test(bucketName)) {
       throw new Error(
-        'Invalid bucket name: must contain only lowercase letters, numbers, hyphens, and underscores, ' +
-          'start and end with alphanumeric characters'
+        'Invalid bucket name: must contain only lowercase letters, numbers, hyphens, and underscores, start and end with alphanumeric characters'
       );
     }
 
@@ -172,180 +168,130 @@ export default class SupabaseFileSystem extends FileSystem {
   }
 
   async chdir(path = '.'): Promise<string> {
-    try {
-      if (path === '/') {
-        this.cwd = '/';
-        return this.cwd;
-      }
+    if (path === '/') return (this.cwd = '/');
 
-      const { clientPath, fsPath } = this._resolvePath(path);
+    const { clientPath, fsPath } = this._resolvePath(path);
 
-      if (clientPath === '/') {
-        this.cwd = '/';
-        return this.cwd;
-      }
+    if (clientPath === '/' || !fsPath || fsPath === this.bucketPrefix) {
+      return (this.cwd = '/');
+    }
 
-      if (!fsPath || fsPath === this.bucketPrefix) {
-        this.cwd = '/';
-        return this.cwd;
-      }
+    if (INVALID_CHARS_REGEX.test(fsPath)) {
+      throw new Error('Invalid directory name: contains invalid characters');
+    }
 
-      if (INVALID_CHARS_REGEX.test(fsPath)) {
-        throw new Error(`Invalid directory name: contains invalid characters`);
-      }
+    const { data, error } = await this.storage.list(fsPath, { limit: 1 });
 
-      const { data, error } = await this.storage.list(fsPath || undefined, {
-        limit: 1,
-      });
-
-      if (error || !data?.length) {
-        throw new Error(
-          `Directory does not exist or is not accessible${error ? `: ${error.message}` : ''}`
-        );
-      }
-
-      this.cwd = clientPath;
-      return this.cwd;
-    } catch (error) {
+    if (error || !data?.length) {
       throw new Error(
-        `Cannot change directory to ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Directory does not exist or is not accessible${error ? `: ${error.message}` : ''}`
       );
     }
+
+    return (this.cwd = clientPath);
   }
 
   async list(path = '.', { showHidden = false }): Promise<FileStats[]> {
-    try {
-      const { fsPath } = this._resolvePath(path);
+    const { fsPath } = this._resolvePath(path);
 
-      const { data, error } = await this.storage.list(fsPath || undefined, {
-        limit: DEFAULT_LIST_LIMIT,
-        offset: 0,
-        sortBy: { column: 'name', order: 'asc' },
+    const { data, error } = await this.storage.list(fsPath, {
+      limit: DEFAULT_LIST_LIMIT,
+      offset: 0,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+
+    if (error) throw new Error(`Failed to list directory: ${error.message}`);
+    if (!data) return [];
+
+    const subdirectories = data.filter(
+      item => !item.metadata && !this.isEmptyFolderPlaceholder(item)
+    );
+    const directoryMtimes = await this.getDirectoryMtimes(
+      fsPath,
+      subdirectories
+    );
+
+    return data
+      .filter(item => showHidden || !item.name.startsWith('.'))
+      .map(item => {
+        const isDirectory = !item.metadata;
+        const dirMtime = isDirectory
+          ? directoryMtimes.get(item.name)
+          : undefined;
+        return this.createFileStats(item.name, item, isDirectory, dirMtime);
       });
-
-      if (error) {
-        throw new Error(`Failed to list directory: ${error.message}`);
-      }
-
-      if (!data) {
-        return [];
-      }
-
-      const subdirectories = data.filter(
-        item => !item.metadata && !this.isEmptyFolderPlaceholder(item)
-      );
-
-      const directoryMtimes = await this.getDirectoryMtimes(
-        fsPath,
-        subdirectories
-      );
-
-      const items = data
-        .filter(item => showHidden || !item.name.startsWith('.'))
-        .map((item): FileStats => {
-          const isDirectory = !item.metadata;
-          const dirMtime = isDirectory
-            ? directoryMtimes.get(item.name)
-            : undefined;
-
-          return this.createFileStats(item.name, item, isDirectory, dirMtime);
-        });
-
-      return items;
-    } catch (error) {
-      console.error('Error listing directory:', error);
-      return [];
-    }
   }
 
   private async getDirectoryMtimes(
     fsPath: string,
     subdirectories: any[]
   ): Promise<Map<string, Date>> {
-    const directoryMtimes = new Map<string, Date>();
+    if (!subdirectories.length) return new Map();
 
-    if (subdirectories.length === 0) return directoryMtimes;
-
-    const subdirMtimePromises = subdirectories.map(async dir => {
+    const mtimePromises = subdirectories.map(async dir => {
       const directoryPath = fsPath ? `${fsPath}/${dir.name}` : dir.name;
-      try {
-        const { data: placeholderData } = await this.storage.list(
-          directoryPath,
-          {
-            limit: DIRECTORY_SEARCH_LIMIT,
-            search: EMPTY_FOLDER_PLACEHOLDER,
-          }
-        );
 
-        const placeholderFile = placeholderData?.find(
-          this.isEmptyFolderPlaceholder
-        );
-        if (placeholderFile) {
-          return {
-            name: dir.name,
-            mtime: this.createDate(placeholderFile),
-          };
-        }
+      try {
+        const { data } = await this.storage.list(directoryPath, {
+          limit: DIRECTORY_SEARCH_LIMIT,
+          search: EMPTY_FOLDER_PLACEHOLDER,
+        });
+
+        const placeholderFile = data?.find(this.isEmptyFolderPlaceholder);
+        return {
+          name: dir.name,
+          mtime: placeholderFile
+            ? this.createDate(placeholderFile)
+            : new Date(),
+        };
       } catch (error) {
         console.debug(
           `Could not get ${EMPTY_FOLDER_PLACEHOLDER} file for directory ${dir.name}:`,
           error
         );
+        return { name: dir.name, mtime: new Date() };
       }
-      return { name: dir.name, mtime: new Date() };
     });
 
-    const subdirMtimes = await Promise.all(subdirMtimePromises);
-    subdirMtimes.forEach(({ name, mtime }) => {
-      directoryMtimes.set(name, mtime);
-    });
-
-    return directoryMtimes;
+    const mtimes = await Promise.all(mtimePromises);
+    return new Map(mtimes.map(({ name, mtime }) => [name, mtime]));
   }
 
   async get(fileName: string): Promise<FileStats> {
-    try {
-      const { fsPath } = this._resolvePath(fileName);
+    const { fsPath } = this._resolvePath(fileName);
 
-      if (fileName === '.' || fileName === '') {
-        return this.createFileStats('.', { metadata: null }, true, new Date());
-      }
-
-      const { data: fileData, error: fileError } = await this.storage.list(
-        fsPath.split('/').slice(0, -1).join('/') || undefined,
-        {
-          limit: DEFAULT_LIST_LIMIT,
-          search: fsPath.split('/').pop(),
-        }
-      );
-
-      if (fileError) {
-        throw new Error(`Failed to get file info: ${fileError.message}`);
-      }
-
-      const file = fileData?.find(
-        item => item.name === fsPath.split('/').pop()
-      );
-
-      if (file) {
-        const isDirectory = !file.metadata;
-        return this.createFileStats(file.name, file, isDirectory);
-      }
-
-      const placeholderFile = await this.findPlaceholderFile(fsPath);
-      if (placeholderFile) {
-        return this.createFileStats(
-          fileName.split('/').pop() || fileName,
-          placeholderFile,
-          true,
-          this.createDate(placeholderFile)
-        );
-      }
-
-      throw new FileSystemError(`File or directory not found: ${fileName}`);
-    } catch (error) {
-      throw error;
+    if (fileName === '.' || fileName === '' || fileName === '/') {
+      return this.createFileStats('.', { metadata: null }, true, new Date());
     }
+
+    const parentPath = fsPath.split('/').slice(0, -1).join('/') || undefined;
+    const { data: fileData, error: fileError } = await this.storage.list(
+      parentPath,
+      {
+        limit: DEFAULT_LIST_LIMIT,
+        search: fsPath.split('/').pop(),
+      }
+    );
+
+    if (fileError)
+      throw new Error(`Failed to get file info: ${fileError.message}`);
+
+    const file = fileData?.find(item => item.name === fsPath.split('/').pop());
+    if (file) {
+      return this.createFileStats(file.name, file, !file.metadata);
+    }
+
+    const placeholderFile = await this.findPlaceholderFile(fsPath);
+    if (placeholderFile) {
+      return this.createFileStats(
+        fileName.split('/').pop() ?? fileName,
+        placeholderFile,
+        true,
+        this.createDate(placeholderFile)
+      );
+    }
+
+    throw new FileSystemError(`File or directory not found: ${fileName}`);
   }
 
   private async _downloadFile(
@@ -353,76 +299,103 @@ export default class SupabaseFileSystem extends FileSystem {
     stream: Writable,
     start?: number
   ) {
+    const emitError = (message: string) => {
+      if (!stream.destroyed) {
+        stream.emit('error', new Error(message));
+      }
+    };
+
+    const isConnectionError = (error: any): boolean => {
+      const code = error?.code;
+      return code === 'EPIPE' || code === 'ECONNRESET' || code === 'ENOTCONN';
+    };
+
     try {
       const { data: signedUrlData, error: signedUrlError } =
         await this.storage.createSignedUrl(fsPath, SIGNED_URL_VALIDITY_SECONDS);
 
-      if (signedUrlError) {
-        stream.emit(
-          'error',
-          new Error(`Failed to get signed URL: ${signedUrlError.message}`)
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        const message = signedUrlError
+          ? `Failed to get signed URL: ${signedUrlError.message}`
+          : 'No signed URL received';
+        console.error(
+          'Signed URL error for path:',
+          fsPath,
+          'Error:',
+          signedUrlError
         );
+        emitError(message);
         return;
       }
 
-      if (!signedUrlData?.signedUrl) {
-        stream.emit('error', new Error('No signed URL received'));
-        return;
-      }
-
-      const options: RequestInit = {};
-      if (start && start > 0) {
-        options.headers = {
-          Range: `bytes=${start}-`,
-        };
-      }
+      const options: RequestInit =
+        start && start > 0 ? { headers: { Range: `bytes=${start}-` } } : {};
 
       const response = await fetch(signedUrlData.signedUrl, options);
 
       if (!response.ok && response.status !== 206) {
-        stream.emit(
-          'error',
-          new Error(
-            `Failed to download file: ${response.status} ${response.statusText}`
-          )
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(
+          'Download failed for path:',
+          fsPath,
+          'Status:',
+          response.status,
+          'Error:',
+          errorText
+        );
+        emitError(
+          `Failed to download file: ${response.status} ${response.statusText}`
         );
         return;
       }
 
       if (!response.body) {
-        stream.emit('error', new Error('Response body is null'));
+        emitError('Response body is null');
         return;
       }
 
-      const nodeStream = Readable.fromWeb(response.body);
+      const readable = Readable.fromWeb(response.body);
 
-      nodeStream.pipe(stream);
+      readable.pipe(stream, { end: false });
 
-      nodeStream.on('error', error => {
+      readable.on('end', () => {
+        if (!stream.destroyed) {
+          stream.end();
+        }
+      });
+
+      readable.on('error', error => {
+        if (isConnectionError(error)) {
+          return;
+        }
         console.error('Stream error:', error);
-        stream.emit('error', error);
       });
     } catch (error) {
+      if (isConnectionError(error)) {
+        return;
+      }
       console.error('Error downloading file:', error);
-      stream.emit('error', error);
+      emitError(
+        `Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   read(fileName: string, options?: { start?: number }): StreamResult {
     const { clientPath, fsPath } = this._resolvePath(fileName);
-
-    const stream = new PassThrough({
-      read() {},
-    });
+    const stream = new PassThrough({ read() {} });
 
     this._downloadFile(fsPath, stream, options?.start).catch(error => {
-      stream.emit('error', error);
+      const code = (error as any).code;
+      if (code === 'EPIPE' || code === 'ECONNRESET' || code === 'ENOTCONN') {
+        return;
+      }
+      if (!stream.destroyed) {
+        stream.emit('error', error);
+      }
     });
 
-    return {
-      stream,
-      clientPath,
-    };
+    return { stream, clientPath };
   }
 
   async write(
@@ -430,10 +403,8 @@ export default class SupabaseFileSystem extends FileSystem {
     options: { append?: boolean; start?: number } = { append: true }
   ): Promise<StreamResult> {
     const { clientPath, fsPath } = this._resolvePath(fileName);
-
     const pass = new Stream.PassThrough();
-
-    const mediaType = mime.lookup(fileName) || 'application/octet-stream';
+    const mediaType = mime.lookup(fileName) ?? 'application/octet-stream';
 
     const upload = new tus.Upload(pass, {
       endpoint: `${process.env.SUPABASE_URL}/storage/v1/upload/resumable`,
@@ -448,7 +419,7 @@ export default class SupabaseFileSystem extends FileSystem {
       metadata: {
         bucketName: this.bucketName,
         objectName: fsPath,
-        contentType: mediaType,
+        contentType: mediaType || 'application/octet-stream',
       },
       chunkSize: UPLOAD_CHUNK_SIZE,
       onError: error => {
@@ -461,39 +432,24 @@ export default class SupabaseFileSystem extends FileSystem {
       },
     });
 
-    upload.findPreviousUploads().then(function (previousUploads) {
-      if (previousUploads[0]) {
+    upload.findPreviousUploads().then(previousUploads => {
+      if (previousUploads[0])
         upload.resumeFromPreviousUpload(previousUploads[0]);
-      }
       upload.start();
     });
 
-    return {
-      stream: pass,
-      clientPath,
-    };
+    return { stream: pass, clientPath };
   }
 
   async delete(path: string): Promise<void> {
-    try {
-      const { fsPath } = this._resolvePath(path);
+    const { fsPath } = this._resolvePath(path);
+    const stats = await this.get(path);
 
-      return this.get(path).then(async stats => {
-        if (stats.isFile()) {
-          const { error } = await this.storage.remove([fsPath]);
-
-          if (error) {
-            throw new Error(`Failed to delete file: ${error.message}`);
-          }
-        } else if (stats.isDirectory()) {
-          await this.deleteDirectory(fsPath, path);
-        }
-
-        return Promise.resolve();
-      });
-    } catch (error) {
-      console.error('Error deleting:', error);
-      return Promise.reject(error);
+    if (stats.isFile()) {
+      const { error } = await this.storage.remove([fsPath]);
+      if (error) throw new Error(`Failed to delete file: ${error.message}`);
+    } else if (stats.isDirectory()) {
+      await this.deleteDirectory(fsPath, path);
     }
   }
 
@@ -523,59 +479,39 @@ export default class SupabaseFileSystem extends FileSystem {
         }
       }
 
-      for (const item of data.filter(item => !item.metadata)) {
-        await this.delete(`${path}/${item.name}`);
-      }
+      await Promise.all(
+        data
+          .filter(item => !item.metadata)
+          .map(item => this.delete(`${path}/${item.name}`))
+      );
     }
   }
 
   async mkdir(path: string): Promise<string> {
-    try {
-      const { clientPath, fsPath } = this._resolvePath(path);
-
-      await this.createEmptyFolderPlaceholder(fsPath);
-
-      return clientPath;
-    } catch (error) {
-      console.error('Error creating directory:', error);
-      throw new Error(
-        `Failed to create directory: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
+    const { clientPath, fsPath } = this._resolvePath(path);
+    await this.createEmptyFolderPlaceholder(fsPath);
+    return clientPath;
   }
 
   async rename(from: string, to: string): Promise<void> {
-    try {
-      const { fsPath: fromFsPath } = this._resolvePath(from);
-      const { fsPath: toFsPath } = this._resolvePath(to);
+    const { fsPath: fromFsPath } = this._resolvePath(from);
+    const { fsPath: toFsPath } = this._resolvePath(to);
+    const stats = await this.get(from);
 
-      const stats = await this.get(from);
-
-      if (stats.isFile()) {
-        const { error } = await this.storage.move(fromFsPath, toFsPath);
-
-        if (error) {
-          throw new Error(`Failed to move file: ${error.message}`);
-        }
-      } else if (stats.isDirectory()) {
-        try {
-          await this.get(to);
-          await this.delete(to);
-        } catch (error) {
-          if (!(error instanceof FileSystemError)) {
-            throw error;
-          }
-        }
-
-        await this._moveDirectory(fromFsPath, toFsPath);
-      } else {
-        throw new Error(`Unknown file type for ${from}`);
+    if (stats.isFile()) {
+      const { error } = await this.storage.move(fromFsPath, toFsPath);
+      if (error) throw new Error(`Failed to move file: ${error.message}`);
+    } else if (stats.isDirectory()) {
+      try {
+        await this.get(to);
+        await this.delete(to);
+      } catch (error) {
+        if (!(error instanceof FileSystemError)) throw error;
       }
-    } catch (error) {
-      console.error('Error renaming:', error);
-      throw new Error(
-        `Failed to rename ${from} to ${to}: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+
+      await this._moveDirectory(fromFsPath, toFsPath);
+    } else {
+      throw new Error(`Unknown file type for ${from}`);
     }
   }
 
