@@ -14,6 +14,8 @@ const retr: CommandRegistry = {
 
     if (!filePath) return this.reply(501, 'No file path specified');
 
+    const startPosition = this.restByteCount;
+
     return this.connector
       .waitForConnection()
       .then(() => {
@@ -25,7 +27,7 @@ const retr: CommandRegistry = {
           throw new Error('Cannot retrieve a directory');
         }
 
-        return fs.read(filePath, { start: this.restByteCount });
+        return fs.read(filePath, { start: startPosition });
       })
       .then(async fsResponse => {
         let { stream, clientPath } = fsResponse;
@@ -65,47 +67,58 @@ const retr: CommandRegistry = {
           stream.on('data', data => {
             totalBytes += data.length;
             if (this.connector.socket && this.connector.socket.writable) {
-              this.connector.socket.write(data);
+              try {
+                this.connector.socket.write(data);
+              } catch (err) {
+                reject(err);
+              }
             } else {
               reject(new Error('Data connection lost'));
             }
           });
 
           stream.once('end', () => {
-            console.log(`File transfer completed: ${totalBytes} bytes sent`);
             resolve(void 0);
           });
 
           stream.once('error', err => {
-            console.error('Stream error:', err);
             destroyConnection(this.connector.socket, reject)(err);
           });
 
           this.connector.socket?.once('error', err => {
-            console.error('Data connection error:', err);
             destroyConnection(stream, reject)(err);
           });
-
-          this.connector.socket?.once('close', () => {
-            console.log('Data connection closed');
-          });
         });
-
-        this.restByteCount = 0;
 
         return eventsPromise
           .then(() => this.emit('RETR', null, serverPath))
           .then(() => this.reply(226, `Transfer complete for ${clientPath}`))
           .then(() => {
+            this.restByteCount = 0;
             if (stream.destroy) stream.destroy();
           });
       })
       .catch(err => {
-        console.error('RETR error:', err);
-        if (err && err instanceof TimeoutError) {
+        if (err instanceof TimeoutError) {
           return this.reply(425, 'No connection established');
         }
+
+        if (err?.code === 'EPIPE') {
+          this.emit('RETR', null, filePath);
+          return this.reply(226, `Transfer complete for ${filePath}`);
+        }
+
+        const isConnectionError = ['ECONNRESET', 'ENOTCONN'].includes(
+          err?.code
+        );
+
+        if (isConnectionError) {
+          this.restByteCount = 0;
+          return this.reply(426, 'Connection closed; transfer aborted');
+        }
+
         this.emit('RETR', err);
+        this.restByteCount = 0;
         return this.reply(
           550,
           err.message || 'File not found or cannot be retrieved'

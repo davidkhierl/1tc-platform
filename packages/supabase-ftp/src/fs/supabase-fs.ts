@@ -305,11 +305,6 @@ export default class SupabaseFileSystem extends FileSystem {
       }
     };
 
-    const isConnectionError = (error: any): boolean => {
-      const code = error?.code;
-      return code === 'EPIPE' || code === 'ECONNRESET' || code === 'ENOTCONN';
-    };
-
     try {
       const { data: signedUrlData, error: signedUrlError } =
         await this.storage.createSignedUrl(fsPath, SIGNED_URL_VALIDITY_SECONDS);
@@ -365,15 +360,10 @@ export default class SupabaseFileSystem extends FileSystem {
       });
 
       readable.on('error', error => {
-        if (isConnectionError(error)) {
-          return;
-        }
         console.error('Stream error:', error);
+        emitError(`Stream error: ${error.message}`);
       });
     } catch (error) {
-      if (isConnectionError(error)) {
-        return;
-      }
       console.error('Error downloading file:', error);
       emitError(
         `Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -385,15 +375,7 @@ export default class SupabaseFileSystem extends FileSystem {
     const { clientPath, fsPath } = this._resolvePath(fileName);
     const stream = new PassThrough({ read() {} });
 
-    this._downloadFile(fsPath, stream, options?.start).catch(error => {
-      const code = (error as any).code;
-      if (code === 'EPIPE' || code === 'ECONNRESET' || code === 'ENOTCONN') {
-        return;
-      }
-      if (!stream.destroyed) {
-        stream.emit('error', error);
-      }
-    });
+    this._downloadFile(fsPath, stream, options?.start);
 
     return { stream, clientPath };
   }
